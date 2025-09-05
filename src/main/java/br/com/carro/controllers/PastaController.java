@@ -1,12 +1,13 @@
 package br.com.carro.controllers;
 
 import br.com.carro.autenticacao.JpaUserDetailsService;
-import br.com.carro.entities.DTO.PastaCreateDTO;
-import br.com.carro.entities.DTO.PastaDTO;
-import br.com.carro.entities.DTO.PastaRequestDTO;
+import br.com.carro.entities.DTO.*;
 import br.com.carro.entities.Pasta;
 import br.com.carro.entities.Usuario.Usuario;
+import br.com.carro.repositories.PastaRepository;
+import br.com.carro.repositories.UsuarioRepository;
 import br.com.carro.services.PastaService;
+import br.com.carro.utils.AuthService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -34,46 +35,56 @@ public class PastaController {
 
     @Autowired
     private PastaService pastaService;
-
-    @Autowired
+    private AuthService authService;
     private JpaUserDetailsService userDetailsService;
 
-    // DTO para receber os dados da nova pasta
-    public record NovaPastaDto(String nomePasta, Long pastaPaiId) {}
+    // ✅ Use constructor injection
+    public PastaController( AuthService authService) {
+        this.authService = authService;
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<?> criarPasta(@RequestBody @Valid PastaRequestDTO pastaDTO, Authentication authentication) {
+    public ResponseEntity<?> criarPasta(
+            @RequestBody @Valid PastaRequestDTO pastaDTO,
+            Authentication authentication
+    ) {
         try {
-            // Obter o Principal (Jwt) e o nome do usuário (subject)
-            Jwt jwt = (Jwt) authentication.getPrincipal();
-            Usuario usuarioLogado = (Usuario) userDetailsService.loadUserByUsername(jwt.getSubject());
-
-            // Chamar o service com o DTO e o usuário logado
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             Pasta novaPasta = pastaService.criarPasta(pastaDTO, usuarioLogado);
-
             return ResponseEntity.status(HttpStatus.CREATED).body(PastaDTO.fromEntity(novaPasta));
-        } catch (IllegalArgumentException | EntityNotFoundException e) {
+
+        } catch (IllegalArgumentException | jakarta.persistence.EntityNotFoundException e) {
             logger.warn("Erro ao criar pasta: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (AccessDeniedException e) {
-            logger.warn("Acesso negado ao criar pasta");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+
         } catch (Exception e) {
             logger.error("Erro inesperado ao criar pasta", e);
             return ResponseEntity.internalServerError().body("Erro ao criar a pasta.");
         }
     }
 
-    @GetMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<PastaDTO>> listarPastasRaiz(@AuthenticationPrincipal Usuario usuarioLogado) {
-        List<Pasta> pastasRaiz = pastaService.listarPastasRaiz(usuarioLogado);
-        List<PastaDTO> pastasDTO = pastasRaiz.stream()
-                .map(PastaDTO::fromEntity)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(pastasDTO);
+    @GetMapping("/raiz")
+    public ResponseEntity<List<PastaDTO>> listarPastasRaiz(Authentication authentication) throws AccessDeniedException {
+        Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+        List<Pasta> pastas = pastaService.listarPastasRaiz(usuarioLogado);
+        return ResponseEntity.ok(pastas.stream().map(PastaDTO::fromEntity).toList());
     }
 
+    @GetMapping("/arvore")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE','BASIC')")
+    public ResponseEntity<?> getArvorePastas(
+            Authentication authentication,
+            @RequestBody(required = false) PastaFilterDTO filtro
+    ) {
+        try {
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            if (filtro == null) filtro = new PastaFilterDTO();
+            List<PastaCompletaDTO> arvore = pastaService.getTodasPastasCompletas(usuarioLogado, filtro);
+            return ResponseEntity.ok(arvore);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao buscar árvore de pastas.");
+        }
+    }
 
 }

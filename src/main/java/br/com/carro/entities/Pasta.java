@@ -36,7 +36,7 @@ public class Pasta {
 
     @OneToMany(mappedBy = "pastaPai", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private Set<Pasta> subpastas;
+    private Set<Pasta> subPastas;
 
     @OneToMany(mappedBy = "pasta", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore

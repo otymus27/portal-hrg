@@ -28,7 +28,7 @@ public class Arquivo {
     private String caminhoArmazenamento;
 
     @Column(name = "tamanho_bytes")
-    private Long tamanhoBytes;
+    private Long tamanho;
 
     @CreatedDate
     @Column(name = "data_upload", nullable = false, updatable = false)

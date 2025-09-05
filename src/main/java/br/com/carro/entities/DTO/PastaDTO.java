@@ -17,7 +17,7 @@ public record PastaDTO(
                 pasta.getNomePasta(),
                 pasta.getCaminhoCompleto(),
                 pasta.getDataCriacao(),
-                pasta.getCriadoPor().getUsername()
+                pasta.getCriadoPor() != null ? pasta.getCriadoPor().getUsername() : null
         );
     }
 }
