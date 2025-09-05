@@ -167,22 +167,10 @@ public class SecurityConfigurations {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
 
+
         return jwtAuthenticationConverter;
     }
 
-    // @Bean
-    // public CorsConfigurationSource corsConfigurationSource() {
-    //     CorsConfiguration configuration = new CorsConfiguration();
-    //     // ✅ Use o IP real da sua máquina e a porta do Nginx
-    //     configuration.setAllowedOrigins(Arrays.asList("http://10.85.190.202:86")); 
-    //     // ✅ O restante da configuração pode ficar igual
-    //     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    //     configuration.setAllowedHeaders(Arrays.asList("*"));
-    //     configuration.setAllowCredentials(false);
-    //     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    //     source.registerCorsConfiguration("/**", configuration);
-    //     return source;
-    // }
 
     @Bean
     public AuthenticationManager authenticationManager(

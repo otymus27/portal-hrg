@@ -1,17 +1,23 @@
 package br.com.carro.entities.DTO;
 
-import br.com.carro.entities.Arquivo;
 import br.com.carro.entities.Pasta;
-import java.time.LocalDateTime;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-// Para listagem de pastas
+import java.time.LocalDateTime;
+
 public record PastaDTO(
         Long id,
         String nome,
-        Long pastaPaiId,
+        String caminhoCompleto,
         LocalDateTime dataCriacao,
-        LocalDateTime dataAlteracao,
-        Long donoId // usuário dono da pasta pai
-) {}
+        String nomeUsuarioCriador
+) {
+    public static PastaDTO fromEntity(Pasta pasta) {
+        return new PastaDTO(
+                pasta.getId(),
+                pasta.getNomePasta(),
+                pasta.getCaminhoCompleto(),
+                pasta.getDataCriacao(),
+                pasta.getCriadoPor().getUsername()
+        );
+    }
+}

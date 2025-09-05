@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -18,15 +19,15 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component // necessário para o Spring enxergar como bean e usar no SecurityConfig
+
+@Component
 @ControllerAdvice
 public class ApiExceptionHandler implements AuthenticationEntryPoint {
 
-    // Método para tratar erro de chave duplicada
+    // Tratamento para violação de integridade de dados (ex: valor duplicado)
     @ResponseBody
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
@@ -41,9 +42,9 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
             try {
                 int keyIndex = message.toLowerCase().indexOf("for key");
                 if (keyIndex != -1) {
-                    String key = message.substring(keyIndex).replace("for key", "").replace("'", "").trim(); // ex: tb_carro.placa
+                    String key = message.substring(keyIndex).replace("for key", "").replace("'", "").trim();
                     if (key.contains(".")) {
-                        campo = key.split("\\.")[1]; // pega apenas "placa"
+                        campo = key.split("\\.")[1];
                     } else {
                         campo = key;
                     }
@@ -51,31 +52,26 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
             } catch (Exception e) {
                 campo = "desconhecido";
             }
-
             error.put("campo", campo);
             error.put("mensagem", "Valor duplicado para o campo '" + campo + "'.");
         } else {
             error.put("mensagem", "Operação não permitida: o recurso está em uso ou viola uma restrição.");
         }
-
         return error;
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
-        if (ex.getMessage().contains("CPF já cadastrado")) {
-            return new ResponseEntity<>(
-                    Collections.singletonMap("error", ex.getMessage()),
-                    HttpStatus.BAD_REQUEST // 400
-            );
-        }
-        return new ResponseEntity<>(
-                Collections.singletonMap("error", "Ocorreu um erro interno."),
-                HttpStatus.INTERNAL_SERVER_ERROR // 500
-        );
+    // Handler para erros de recursos não encontrados (404)
+    @ResponseBody
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleResourceNotFound(ResourceNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("erro", "Recurso não encontrado");
+        error.put("mensagem", ex.getMessage());
+        return error;
     }
 
-
+    // Handler para erros de dados inválidos (400)
     @ResponseBody
     @ExceptionHandler(DadosInvalidosException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -86,6 +82,7 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
         return error;
     }
 
+    // Handler para erros de validação de DTOs (anotações @Valid)
     @ResponseBody
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -96,6 +93,7 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
         return errors;
     }
 
+    // Handler para falha na autenticação (usuário/senha incorretos)
     @ResponseBody
     @ExceptionHandler(BadCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
@@ -106,28 +104,18 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
         return error;
     }
 
+    // Handler para falha na autorização (usuário não tem permissão)
     @ResponseBody
     @ExceptionHandler(AuthorizationDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Map<String, String> handleAuthorizationDenied(AuthorizationDeniedException ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("erro", "Acesso negado, tem que ter perfil de Administrador!!!");
-        error.put("mensagem", ex.getMessage()); // Ou uma mensagem fixa, se preferir
+        error.put("erro", "Acesso negado");
+        error.put("mensagem", "Você não tem permissão para acessar este recurso.");
         return error;
     }
 
-    @ResponseBody
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleGenericException(Exception ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("erro", "Erro interno no servidor");
-        error.put("mensagem", "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.");
-        // Log the exception for debugging purposes
-        ex.printStackTrace();
-        return error;
-    }
-
+    // Handler para Endpoint não encontrado (404)
     @ResponseBody
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -139,6 +127,7 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
         return error;
     }
 
+    // Handler para tipo de argumento de URL inválido (ex: ID que não é um número)
     @ResponseBody
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -149,22 +138,28 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
         return error;
     }
 
+    // Handler genérico para capturar qualquer outra exceção não tratada
+    @ResponseBody
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleGenericException(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("erro", "Erro interno no servidor");
+        error.put("mensagem", "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.");
+        ex.printStackTrace(); // Boa prática para debugar em ambiente de desenvolvimento
+        return error;
+    }
+
     // Método para tratar quando o usuário não está autenticado
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
-                         org.springframework.security.core.AuthenticationException authException) throws IOException {
-        System.out.println("===> Método commence() chamado!");
-
-        String path = request.getRequestURI();
-        // Simula checagem de endpoint válido (ideal: fazer isso com mais controle)
-        boolean endpointValido = path.matches("(/login|/usuarios|/outros-validos)(/.*)?");
-
+                         AuthenticationException authException) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         new ObjectMapper().writeValue(response.getOutputStream(), Map.of(
                 "erro", "Não autorizado",
                 "mensagem", "Você precisa estar autenticado para acessar este recurso.",
-                "path", path
+                "path", request.getRequestURI()
         ));
     }
 }

@@ -7,5 +7,5 @@ public record PaginacaoResponseDTO<T>(
         List<T> conteudo,
         int paginaAtual,
         int totalPaginas,
-        long totalElementos
-) {}
+        long totalElementos,
+        int totalPages) {}

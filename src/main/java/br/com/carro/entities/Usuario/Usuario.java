@@ -99,4 +99,13 @@ public class Usuario implements UserDetails {
         // Por padrão, retorne 'true' para indicar que a conta está habilitada.
         return true;
     }
+
+    /**
+     * Verifica se o usuário possui a role de administrador.
+     * @return true se o usuário for um administrador, false caso contrário.
+     */
+    public boolean isAdmin() {
+        return this.roles.stream()
+                .anyMatch(role -> "ADMIN".equals(role.getNome()));
+    }
 }
