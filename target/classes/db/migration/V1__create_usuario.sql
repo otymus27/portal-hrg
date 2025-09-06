@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS tb_pasta (
     caminho_completo VARCHAR(1024) NOT NULL,
     data_criacao DATETIME(6) NOT NULL,
     data_atualizacao DATETIME(6) NOT NULL,
-    is_publica BOOLEAN NOT NULL DEFAULT FALSE,
+    is_publico BOOLEAN NOT NULL DEFAULT FALSE,
     pasta_pai_id BIGINT,
     criado_por_id BIGINT,
     CONSTRAINT fk_subpastas_pasta_pai FOREIGN KEY (pasta_pai_id) REFERENCES tb_pasta (id),
@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS tb_arquivo (
     tamanho_bytes BIGINT,
     data_upload DATETIME(6) NOT NULL,
     data_atualizacao DATETIME(6) NOT NULL,
+    is_publico BOOLEAN NOT NULL DEFAULT FALSE,
     hash_arquivo VARCHAR(64),
     tipo_mime VARCHAR(100),
     pasta_id BIGINT,
@@ -108,7 +109,7 @@ INSERT INTO tb_usuarios_roles (user_id, role_id) VALUES
 
 -- Inserção de pastas principais
 -- Algumas pastas são marcadas como públicas
-INSERT INTO tb_pasta (nome_pasta, caminho_completo, data_criacao, data_atualizacao, pasta_pai_id, criado_por_id, is_publica) VALUES
+INSERT INTO tb_pasta (nome_pasta, caminho_completo, data_criacao, data_atualizacao, pasta_pai_id, criado_por_id, is_publico) VALUES
                                                                                                                                  ('Relatorios-Financeiros', '/Financeiro/Relatorios-Financeiros', NOW(), NOW(), NULL, 1, TRUE),
                                                                                                                                  ('Campanhas-2025', '/Marketing/Campanhas-2025', NOW(), NOW(), NULL, 1, TRUE),
                                                                                                                                  ('Docs-RH', '/RH/Docs-RH', NOW(), NOW(), NULL, 1, FALSE),
@@ -118,40 +119,35 @@ INSERT INTO tb_pasta (nome_pasta, caminho_completo, data_criacao, data_atualizac
 
 
 -- Subpastas
-INSERT INTO tb_pasta (nome_pasta, caminho_completo, data_criacao, data_atualizacao, pasta_pai_id) VALUES
-                                                                                                      ('Relatorio de Vendas - 2024', '/Financeiro/Relatorios-Financeiros/Relatorio de Vendas', NOW(), NOW(), 1),
-                                                                                                      ('Relatorios Mensais', '/Financeiro/Relatorios-Financeiros/Relatorios Mensais', NOW(), NOW(), 1),
-                                                                                                      ('Relatorios Anuais', '/Financeiro/Relatorios-Financeiros/Relatorios Anuais', NOW(), NOW(), 1),
-                                                                                                      ('Relatorios', '/TI/Projetos-TI/Relatorios', NOW(), NOW(), 4),
-                                                                                                      ('Documentacao', '/TI/Projetos-TI/Documentacao', NOW(), NOW(), 4),
-                                                                                                      ('Backups', '/TI/Projetos-TI/Backups', NOW(), NOW(), 4),
-                                                                                                      ('Manuais', '/RH/Docs-RH/Manuais', NOW(), NOW(), 3),
-                                                                                                      ('Procedimentos', '/RH/Docs-RH/Procedimentos', NOW(), NOW(), 3),
-                                                                                                      ('Formularios', '/RH/Docs-RH/Formularios', NOW(), NOW(), 3)
+INSERT INTO tb_pasta (nome_pasta, caminho_completo, data_criacao, data_atualizacao,is_publico, pasta_pai_id) VALUES
+                                                                                                      ('Relatorio de Vendas - 2024', '/Financeiro/Relatorios-Financeiros/Relatorio de Vendas', NOW(), NOW(), true, 1),
+                                                                                                      ('Relatorios Mensais', '/Financeiro/Relatorios-Financeiros/Relatorios Mensais', NOW(), NOW(), true, 1),
+                                                                                                      ('Relatorios Anuais', '/Financeiro/Relatorios-Financeiros/Relatorios Anuais', NOW(), NOW(), true, 1),
+                                                                                                      ('Relatorios', '/TI/Projetos-TI/Relatorios', NOW(), NOW(), false, 4),
+                                                                                                      ('Documentacao', '/TI/Projetos-TI/Documentacao', NOW(), NOW(), true, 4),
+                                                                                                      ('Backups', '/TI/Projetos-TI/Backups', NOW(), NOW(), false, 4),
+                                                                                                      ('Manuais', '/RH/Docs-RH/Manuais', NOW(), NOW(), true,3),
+                                                                                                      ('Procedimentos', '/RH/Docs-RH/Procedimentos', NOW(), NOW(), true,3),
+                                                                                                      ('Formularios', '/RH/Docs-RH/Formularios', NOW(), NOW(), true, 3)
     ON DUPLICATE KEY UPDATE nome_pasta = nome_pasta;
 
 
 -- Arquivos nas pastas principais
-INSERT INTO tb_arquivo (nome_arquivo, caminho_armazenamento, tamanho_bytes, data_upload, data_atualizacao, pasta_id, criado_por_id, hash_arquivo, tipo_mime) VALUES
-                                                                                                                                                                 ('Relatorio_de_Vendas.pdf', '/caminho/servidor/vendas.pdf', 10240, NOW(), NOW(), 1, 2, 'abc123456789def', 'application/pdf'),
-                                                                                                                                                                 ('Plano_de_Midia.pdf', '/caminho/servidor/midia.pdf', 5120, NOW(), NOW(), 2, 4, 'def987654321abc', 'application/pdf'),
-                                                                                                                                                                 ('Manual_do_Funcionario.pdf', '/caminho/servidor/manual.pdf', 8192, NOW(), NOW(), 3, 3, 'xyz123abc456def', 'application/pdf'),
-                                                                                                                                                                 ('Especificacoes_Sistema.pdf', '/caminho/servidor/specs.pdf', 20480, NOW(), NOW(), 4, 1, 'qwe123rty456uio', 'application/pdf'),
-                                                                                                                                                                 ('Minuta_de_Acordo.pdf', '/caminho/servidor/acordo.pdf', 4096, NOW(), NOW(), 5, 5, 'lmn456opq789rst', 'application/pdf')
+INSERT INTO tb_arquivo (nome_arquivo, caminho_armazenamento, tamanho_bytes, data_upload, data_atualizacao,is_publico, pasta_id, criado_por_id, hash_arquivo, tipo_mime) VALUES
+                                                                                                                                                                 ('Relatorio_de_Vendas.pdf', '/caminho/servidor/vendas.pdf', 10240, NOW(), NOW(), true,1, 2, 'abc123456789def', 'application/pdf'),
+                                                                                                                                                                 ('Plano_de_Midia.pdf', '/caminho/servidor/midia.pdf', 5120, NOW(), NOW(), true,2, 4, 'def987654321abc', 'application/pdf'),
+                                                                                                                                                                 ('Manual_do_Funcionario.pdf', '/caminho/servidor/manual.pdf', 8192, NOW(), NOW(), false,3, 3, 'xyz123abc456def', 'application/pdf'),
+                                                                                                                                                                 ('Especificacoes_Sistema.pdf', '/caminho/servidor/specs.pdf', 20480, NOW(), NOW(), true,4, 1, 'qwe123rty456uio', 'application/pdf'),
+                                                                                                                                                                 ('Minuta_de_Acordo.pdf', '/caminho/servidor/acordo.pdf', 4096, NOW(), NOW(), true, 5, 5, 'lmn456opq789rst', 'application/pdf')
     ON DUPLICATE KEY UPDATE nome_arquivo = nome_arquivo;
 
 
 -- Arquivos nas subpastas
-INSERT INTO tb_arquivo (nome_arquivo, caminho_armazenamento, tamanho_bytes, data_upload, data_atualizacao, pasta_id, criado_por_id, hash_arquivo, tipo_mime) VALUES
-                                                                                                                                                                 ('Vendas_Jan2024.pdf', '/caminho/servidor/vendas_jan.pdf', 2048, NOW(), NOW(), 6, 2, '1a2b3c4d5e6f7g8h', 'application/pdf'),
-                                                                                                                                                                 ('Vendas_Fev2024.pdf', '/caminho/servidor/vendas_fev.pdf', 2048, NOW(), NOW(), 7, 2, '2h3i4j5k6l7m8n', 'application/pdf'),
-                                                                                                                                                                 ('Vendas_Mar2024.pdf', '/caminho/servidor/vendas_mar.pdf', 2048, NOW(), NOW(), 8, 2, '3o4p5q6r7s8t9u', 'application/pdf'),
-                                                                                                                                                                 ('Relatorio_Teste.pdf', '/caminho/servidor/relatorio_teste.pdf', 1024, NOW(), NOW(), 9, 1, '4v5w6x7y8z9a0b', 'application/pdf'),
-                                                                                                                                                                 ('Documentacao_API.pdf', '/caminho/servidor/doc_api.pdf', 5120, NOW(), NOW(), 10, 1, '5c6d7e8f9g0h1i', 'application/pdf'),
-                                                                                                                                                                 ('Backup_DB.zip', '/caminho/servidor/backup_db.zip', 102400, NOW(), NOW(), 11, 1, '6j7k8l9m0n1o2p', 'application/zip'),
-                                                                                                                                                                 ('Manual_Recursos_Humanos.pdf', '/caminho/servidor/manual_rh.pdf', 4096, NOW(), NOW(), 12, 3, '7p8q9r0s1t2u3v', 'application/pdf'),
-                                                                                                                                                                 ('Procedimentos_Internos.pdf', '/caminho/servidor/procedimentos.pdf', 2048, NOW(), NOW(), 3, 3, '8w9x0y1z2a3b4c', 'application/pdf'),
-                                                                                                                                                                 ('Formularios_Contratacao.pdf', '/caminho/servidor/formularios.pdf', 1024, NOW(), NOW(), 14, 3, '9d0e1f2g3h4i5j', 'application/pdf')
+INSERT INTO tb_arquivo (nome_arquivo, caminho_armazenamento, tamanho_bytes, data_upload, data_atualizacao, is_publico, pasta_id, criado_por_id, hash_arquivo, tipo_mime) VALUES
+                                                                                                                                                                 ('Backup_DB.zip', '/caminho/servidor/backup_db.zip', 102400, NOW(), NOW(), true,11, 1, '6j7k8l9m0n1o2p', 'application/zip'),
+                                                                                                                                                                 ('Manual_Recursos_Humanos.pdf', '/caminho/servidor/manual_rh.pdf', 4096, NOW(), NOW(),true, 12, 3, '7p8q9r0s1t2u3v', 'application/pdf'),
+                                                                                                                                                                 ('Procedimentos_Internos.pdf', '/caminho/servidor/procedimentos.pdf', 2048, NOW(), NOW(), false,3, 3, '8w9x0y1z2a3b4c', 'application/pdf'),
+                                                                                                                                                                 ('Formularios_Contratacao.pdf', '/caminho/servidor/formularios.pdf', 1024, NOW(), NOW(), true,14, 3, '9d0e1f2g3h4i5j', 'application/pdf')
     ON DUPLICATE KEY UPDATE nome_arquivo = nome_arquivo;
 
 

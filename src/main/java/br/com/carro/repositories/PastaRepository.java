@@ -2,6 +2,8 @@ package br.com.carro.repositories;
 
 import br.com.carro.entities.Pasta;
 import br.com.carro.entities.Usuario.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -42,4 +44,10 @@ public interface PastaRepository extends JpaRepository<Pasta, Long> {
 
     @EntityGraph(attributePaths = {"subPastas", "arquivos", "usuariosComPermissao"})
     List<Pasta> findByPastaPaiIsNull(); // retorna apenas pastas raiz
+
+    //Para acesso publico
+    List<Pasta> findAllByPastaPaiIsNullAndPublicaTrue();
+    List<Pasta> findByNomePastaContainingAndPublicaTrue(String termo);
+   // Page<Pasta> findAllByPublicaTrue(Pageable pageable);
+    Page<Pasta> findAllByPublicaTrue(Pageable pageable);
 }

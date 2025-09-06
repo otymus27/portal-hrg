@@ -52,4 +52,7 @@ public class Arquivo {
     @JoinColumn(name = "criado_por_id")
     @JsonIgnore
     private Usuario criadoPor;
+
+    @Column(name = "is_publico")
+    private boolean publico;
 }

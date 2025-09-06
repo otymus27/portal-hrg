@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Arrays;
+
 /**
  * Interface de repositório para a entidade Arquivo.
  * Estende JpaRepository para operações básicas de CRUD e paginação.
@@ -20,4 +22,6 @@ public interface ArquivoRepository extends JpaRepository<Arquivo, Long> {
     Page<Arquivo> findByPasta(Pasta pasta, Pageable pageable);
 
     Page<Arquivo> findByNomeArquivoContainingIgnoreCase(String nomeArquivo, Pageable pageable);
+
+    Arrays findByPastaId(Long pastaId);
 }
