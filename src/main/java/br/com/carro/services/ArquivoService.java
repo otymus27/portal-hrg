@@ -10,8 +10,13 @@ import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import br.com.carro.utils.ArquivoUtils;
 import br.com.carro.utils.FileUtils;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -233,49 +238,81 @@ public class ArquivoService {
      */
     @Transactional
     public List<ArquivoDTO> excluirArquivosDaPasta(Long pastaId, List<Long> arquivoIds, Usuario usuarioLogado) throws IOException {
-        // 1. Buscar pasta
+        // 1️⃣ Buscar a pasta
         Pasta pasta = pastaRepository.findById(pastaId)
                 .orElseThrow(() -> new RuntimeException("Pasta não encontrada"));
 
-        // 2. Verificar permissão do usuário na pasta
+        // 2️⃣ Verificar permissão
         if (!pasta.getUsuariosComPermissao().contains(usuarioLogado)) {
             throw new RuntimeException("Usuário não possui permissão para excluir arquivos desta pasta");
         }
 
-        // 3. Determinar arquivos a excluir
+        // 3️⃣ Buscar arquivos para exclusão
         List<Arquivo> arquivosParaExcluir;
+
         if (arquivoIds == null || arquivoIds.isEmpty()) {
-            arquivosParaExcluir = pasta.getArquivos().stream().toList(); // todos os arquivos da pasta
+            // Todos os arquivos da pasta
+            arquivosParaExcluir = arquivoRepository.findByPastaId(pasta.getId());
         } else {
-            arquivosParaExcluir = new ArrayList<>();
-            for (Long id : arquivoIds) {
-                Optional<Arquivo> a = arquivoRepository.findById(id);
-                a.ifPresent(arquivo -> {
-                    if (arquivo.getPasta().getId().equals(pastaId)) {
-                        arquivosParaExcluir.add(arquivo);
-                    }
-                });
-            }
+            // Arquivos específicos
+            arquivosParaExcluir = arquivoRepository.findAllById(arquivoIds);
+            // Filtrar somente os que pertencem à pasta
+            arquivosParaExcluir.removeIf(a -> !a.getPasta().getId().equals(pastaId));
         }
 
+        // 4️⃣ Apagar arquivos do disco
         List<ArquivoDTO> arquivosExcluidos = new ArrayList<>();
-
-        // 4. Excluir arquivos
         for (Arquivo arquivo : arquivosParaExcluir) {
             Path caminho = Path.of(arquivo.getCaminhoArmazenamento());
-            try {
-                if (Files.exists(caminho)) {
-                    Files.delete(caminho);
-                }
-            } catch (IOException e) {
-                throw new IOException("Erro ao excluir arquivo: " + arquivo.getNomeArquivo(), e);
+            if (Files.exists(caminho)) {
+                Files.delete(caminho);
             }
-
-            arquivoRepository.delete(arquivo);
             arquivosExcluidos.add(ArquivoDTO.fromEntity(arquivo));
         }
 
+        // 5️⃣ Deletar registros do banco
+        arquivoRepository.deleteAll(arquivosParaExcluir);
+
         return arquivosExcluidos;
+    }
+
+    @Transactional
+    public List<ArquivoDTO> uploadArquivos(Long pastaId, List<MultipartFile> arquivos, Usuario usuarioLogado) throws IOException {
+        // 1️⃣ Buscar a pasta
+        Pasta pasta = pastaRepository.findById(pastaId)
+                .orElseThrow(() -> new RuntimeException("Pasta não encontrada"));
+
+        // 2️⃣ Verificar permissão
+        if (!pasta.getUsuariosComPermissao().contains(usuarioLogado)) {
+            throw new RuntimeException("Usuário não possui permissão para enviar arquivos para esta pasta");
+        }
+
+        List<ArquivoDTO> arquivosSalvos = new ArrayList<>();
+
+        for (MultipartFile file : arquivos) {
+            if (file.isEmpty()) continue;
+
+            // 3️⃣ Salvar fisicamente
+            Path destino = fileUtils.salvarArquivo(file,pasta.getCaminhoCompleto());
+
+            // 4️⃣ Criar entidade Arquivo
+            Arquivo novoArquivo = new Arquivo();
+            novoArquivo.setNomeArquivo(file.getOriginalFilename());
+            novoArquivo.setCaminhoArmazenamento(destino.toString());
+            novoArquivo.setTipoMime(file.getContentType());
+            novoArquivo.setTamanho(file.getSize());
+            novoArquivo.setPasta(pasta);
+            novoArquivo.setCriadoPor(usuarioLogado);
+            novoArquivo.setDataUpload(LocalDateTime.now());
+            novoArquivo.setDataAtualizacao(LocalDateTime.now());
+
+            // 5️⃣ Salvar no banco
+            novoArquivo = arquivoRepository.save(novoArquivo);
+
+            arquivosSalvos.add(ArquivoDTO.fromEntity(novoArquivo));
+        }
+
+        return arquivosSalvos;
     }
 
 
@@ -325,5 +362,33 @@ public class ArquivoService {
     public Arquivo buscarPorId(Long id) {
         return arquivoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Arquivo não encontrado com ID: " + id));
+    }
+
+
+    /**
+     * Lista arquivos de uma pasta com suporte a ordenação, filtros e paginação.
+     */
+    public Page<Arquivo> listarArquivosPorPasta(Long pastaId,
+                                                int page,
+                                                int size,
+                                                String sortField,
+                                                String sortDirection,
+                                                String extensaoFiltro) {
+
+        Pasta pasta = pastaRepository.findById(pastaId)
+                .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada"));
+
+        // Configura ordenação
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort sort = Sort.by(direction, sortField);
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        if (extensaoFiltro != null && !extensaoFiltro.isBlank()) {
+            // Filtra por extensão
+            return arquivoRepository.findByPastaAndExtensaoIgnoreCase(pasta, extensaoFiltro, pageable);
+        }
+
+        return arquivoRepository.findByPasta(pasta, pageable);
     }
 }

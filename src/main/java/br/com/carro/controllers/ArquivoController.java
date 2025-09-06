@@ -8,14 +8,13 @@ import br.com.carro.exceptions.ArquivoNaoEncontradoException;
 import br.com.carro.exceptions.PermissaoNegadaException;
 import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
-import br.com.carro.repositories.UsuarioRepository;
 import br.com.carro.services.ArquivoService;
 import br.com.carro.utils.AuthService;
-import br.com.carro.utils.FileUtils;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -237,6 +236,7 @@ public class ArquivoController {
      *      body = { "arquivoIds": [1,2,3] } ou vazio para todos
      */
     @DeleteMapping("/pasta/{pastaId}/excluir")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     public ResponseEntity<?> excluirArquivosDaPasta(
             @PathVariable Long pastaId,
             @RequestBody(required = false) List<Long> arquivoIds,
@@ -263,23 +263,53 @@ public class ArquivoController {
         }
     }
 
-
-    // RF-016 / RF-017 / RF-018 / RF-019 / RF-020 podem ser implementados depois
-    // Aqui vamos focar nos requisitos públicos e gerais
-
-    // Listar arquivos de uma pasta com filtros e ordenação
-    @GetMapping("/listar/{pastaId}")
-    @PreAuthorize("hasAnyRole('ADMIN','GERENTE','BASIC')")
-    public ResponseEntity<List<ArquivoDTO>> listarArquivos(
+    @PostMapping("/pasta/{pastaId}/upload-multiplos")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<?> uploadMultiplosArquivos(
             @PathVariable Long pastaId,
-            @RequestParam(required = false) String extensao,
-            @RequestParam(defaultValue = "nome") String ordenarPor,
-            @RequestParam(defaultValue = "true") boolean asc
-    ) {
-        Pasta pasta = pastaRepository.findById(pastaId)
-                .orElseThrow(() -> new RuntimeException("Pasta não encontrada"));
+            @RequestParam("arquivos") List<MultipartFile> arquivos,
+            Authentication authentication) {
 
-        List<ArquivoDTO> arquivos = arquivoService.listarArquivos(pasta, extensao, ordenarPor, asc);
+        try {
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            List<ArquivoDTO> resultado = arquivoService.uploadArquivos(pastaId, arquivos, usuarioLogado);
+            return ResponseEntity.ok(resultado);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError()
+                    .body("Erro ao salvar arquivos: " + e.getMessage());
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Erro inesperado ao fazer upload: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Lista arquivos com ordenação, filtros e paginação
+     * Exemplo: GET /api/arquivos/pasta/1?page=0&size=10&sortField=nomeArquivo&sortDirection=asc&extensao=pdf
+     */
+    @GetMapping("/pasta/{pastaId}")
+    public ResponseEntity<Page<Arquivo>> listarArquivos(
+            @PathVariable Long pastaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "nomeArquivo") String sortField,
+            @RequestParam(defaultValue = "asc") String sortDirection,
+            @RequestParam(required = false) String extensao) {
+
+        Page<Arquivo> arquivos = arquivoService.listarArquivosPorPasta(
+                pastaId,
+                page,
+                size,
+                sortField,
+                sortDirection,
+                extensao
+        );
+
         return ResponseEntity.ok(arquivos);
     }
 
