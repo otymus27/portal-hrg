@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -50,4 +51,14 @@ public interface PastaRepository extends JpaRepository<Pasta, Long> {
     List<Pasta> findByNomePastaContainingAndPublicaTrue(String termo);
    // Page<Pasta> findAllByPublicaTrue(Pageable pageable);
     Page<Pasta> findAllByPublicaTrue(Pageable pageable);
+
+    // Busca todas as pastas raiz públicas com subpastas e arquivos já carregados
+    @Query("""
+        SELECT DISTINCT p
+        FROM Pasta p
+        LEFT JOIN FETCH p.subPastas sp
+        LEFT JOIN FETCH p.arquivos a
+        WHERE p.pastaPai IS NULL AND p.publica = true
+    """)
+    List<Pasta> findAllByPastaPaiIsNullAndPublicaTrueComConteudo();
 }

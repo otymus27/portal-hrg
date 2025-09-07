@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,6 +32,9 @@ public interface ArquivoRepository extends JpaRepository<Arquivo, Long> {
         }
         return findByPastaAndNomeArquivoEndingWithIgnoreCase(pasta, extensao, pageable);
     }
+
+    // 🔥 Novo método para buscar por intervalo de datas
+    Page<Arquivo> findByPastaAndDataUploadBetween(Pasta pasta, LocalDateTime inicio, LocalDateTime fim, Pageable pageable);
 
 
     List<Arquivo> findByPastaId(Long pastaId);

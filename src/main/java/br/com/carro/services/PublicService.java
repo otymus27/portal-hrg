@@ -37,10 +37,11 @@ public class PublicService {
     }
 
     /**
-     * Listar pastas públicas raiz com navegação hierárquica
+     * Lista as pastas públicas raiz com subpastas e arquivos carregados.
      */
     public List<PastaPublicaDTO> listarPastasPublicas() {
-        List<Pasta> pastasRaiz = pastaRepository.findAllByPastaPaiIsNullAndPublicaTrue();
+        List<Pasta> pastasRaiz = pastaRepository.findAllByPastaPaiIsNullAndPublicaTrueComConteudo();
+
         return pastasRaiz.stream()
                 .map(PastaPublicaDTO::fromEntity)
                 .collect(Collectors.toList());

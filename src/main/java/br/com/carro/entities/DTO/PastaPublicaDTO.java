@@ -26,16 +26,22 @@ public class PastaPublicaDTO {
         dto.setDataCriacao(pasta.getDataCriacao());
         dto.setNomeUsuarioCriador(pasta.getCriadoPor() != null ? pasta.getCriadoPor().getUsername() : null);
 
-        if (pasta.getArquivos() != null) {
-            pasta.getArquivos().stream()
-                    .filter(Arquivo::isPublico)
-                    .forEach(arquivo -> dto.getArquivos().add(ArquivoDTO.fromEntity(arquivo)));
+        if (pasta.getArquivos() != null && !pasta.getArquivos().isEmpty()) {
+            dto.setArquivos(
+                    pasta.getArquivos().stream()
+                            .filter(Arquivo::isPublico)
+                            .map(ArquivoDTO::fromEntity)
+                            .toList()
+            );
         }
 
-        if (pasta.getSubPastas() != null) {
-            pasta.getSubPastas().stream()
-                    .filter(Pasta::isPublica)
-                    .forEach(sub -> dto.getSubPastas().add(PastaPublicaDTO.fromEntity(sub)));
+        if (pasta.getSubPastas() != null && !pasta.getSubPastas().isEmpty()) {
+            dto.setSubPastas(
+                    pasta.getSubPastas().stream()
+                            .filter(Pasta::isPublica)
+                            .map(PastaPublicaDTO::fromEntity)
+                            .toList()
+            );
         }
 
         return dto;
