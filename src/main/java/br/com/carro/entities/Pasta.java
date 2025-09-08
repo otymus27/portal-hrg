@@ -49,9 +49,6 @@ public class Pasta {
     @LastModifiedDate
     private LocalDateTime dataAtualizacao;
 
-    @Column(name = "is_publico")
-    private boolean publica;
-
     @CreatedBy
     // Dentro de Pasta.java, logo após data_criacao
     @ManyToOne(fetch = FetchType.LAZY)

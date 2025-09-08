@@ -17,6 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/publico")
+@CrossOrigin(origins = "*")
 public class PublicController {
 
     @Autowired
@@ -88,6 +89,20 @@ public class PublicController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=pasta_" + id + ".zip")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(zipFile);
+    }
+
+
+    /**
+     * Retorna o conteúdo do arquivo diretamente, para visualização no navegador.
+     */
+    @GetMapping("/visualizar/arquivo/{id}")
+    public ResponseEntity<Resource> visualizarArquivo(@PathVariable Long id) {
+        Resource resource = publicService.getArquivoParaVisualizacao(id);
+        String contentType = publicService.getContentType(id);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
     }
 
 

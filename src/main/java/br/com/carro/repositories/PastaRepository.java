@@ -47,18 +47,8 @@ public interface PastaRepository extends JpaRepository<Pasta, Long> {
     List<Pasta> findByPastaPaiIsNull(); // retorna apenas pastas raiz
 
     //Para acesso publico
-    List<Pasta> findAllByPastaPaiIsNullAndPublicaTrue();
-    List<Pasta> findByNomePastaContainingAndPublicaTrue(String termo);
-   // Page<Pasta> findAllByPublicaTrue(Pageable pageable);
-    Page<Pasta> findAllByPublicaTrue(Pageable pageable);
+    List<Pasta> findByNomePastaContaining(String termo);
 
-    // Busca todas as pastas raiz públicas com subpastas e arquivos já carregados
-    @Query("""
-        SELECT DISTINCT p
-        FROM Pasta p
-        LEFT JOIN FETCH p.subPastas sp
-        LEFT JOIN FETCH p.arquivos a
-        WHERE p.pastaPai IS NULL AND p.publica = true
-    """)
-    List<Pasta> findAllByPastaPaiIsNullAndPublicaTrueComConteudo();
+    Page<Pasta> findAllBy(Pageable pageable);
+
 }

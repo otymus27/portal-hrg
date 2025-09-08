@@ -38,7 +38,6 @@ public class PastaPublicaDTO {
         if (pasta.getSubPastas() != null && !pasta.getSubPastas().isEmpty()) {
             dto.setSubPastas(
                     pasta.getSubPastas().stream()
-                            .filter(Pasta::isPublica)
                             .map(PastaPublicaDTO::fromEntity)
                             .toList()
             );

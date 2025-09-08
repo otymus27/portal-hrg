@@ -139,7 +139,8 @@ public class SecurityConfigurations {
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 // ✅ Permite acesso a qualquer rota pública (incluindo as novas)
                                 .requestMatchers(HttpMethod.GET, "/api/publico/**").permitAll()
-//                        .requestMatchers(HttpMethod.GET, "/api/pasta/top-level").permitAll()
+
+
                                 .requestMatchers(HttpMethod.GET, "/api/privado/pastas/download").authenticated() // ✅ Novo: Protege especificamente o download
 
 
@@ -147,6 +148,13 @@ public class SecurityConfigurations {
 
                                 .anyRequest().authenticated()
                 )
+
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions
+                                .sameOrigin() // Permite que a página seja exibida em um iframe somente se for do mesmo domínio
+                        )
+                )
+
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))) // Configura o servidor de recursos OAuth2 para usar JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // Garante que sessões não serão criadas
 

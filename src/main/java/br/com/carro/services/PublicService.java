@@ -7,11 +7,14 @@ import br.com.carro.entities.DTO.PastaPublicaDTO;
 import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.*;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -40,7 +43,7 @@ public class PublicService {
      * Lista as pastas públicas raiz com subpastas e arquivos carregados.
      */
     public List<PastaPublicaDTO> listarPastasPublicas() {
-        List<Pasta> pastasRaiz = pastaRepository.findAllByPastaPaiIsNullAndPublicaTrueComConteudo();
+        List<Pasta> pastasRaiz = pastaRepository.findAllByPastaPaiIsNull();
 
         return pastasRaiz.stream()
                 .map(PastaPublicaDTO::fromEntity)
@@ -51,7 +54,7 @@ public class PublicService {
      * Busca global de arquivos e pastas públicas por nome
      */
     public List<PastaPublicaDTO> buscarPorNome(String termo) {
-        List<Pasta> pastas = pastaRepository.findByNomePastaContainingAndPublicaTrue(termo);
+        List<Pasta> pastas = pastaRepository.findByNomePastaContaining(termo);
         return pastas.stream()
                 .map(PastaPublicaDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -61,18 +64,13 @@ public class PublicService {
      * Paginação + ordenação para arquivos e pastas públicas
      */
     public Page<PastaPublicaDTO> listarPastasPublicas(Pageable pageable) {
-        Page<Pasta> page = pastaRepository.findAllByPublicaTrue(pageable);
+        Page<Pasta> page = pastaRepository.findAllBy(pageable);
         return page.map(PastaPublicaDTO::fromEntity);
     }
 
     public List<ArquivoPublicoDTO> listarArquivosPublicos(Long pastaId) {
         Pasta pasta = pastaRepository.findById(pastaId)
                 .orElseThrow(() -> new RuntimeException("Pasta não encontrada"));
-
-        // Verifica se a pasta é pública
-        if (!Boolean.TRUE.equals(pasta.isPublica())) {
-            throw new RuntimeException("A pasta não é pública");
-        }
 
         return pasta.getArquivos()
                 .stream()
@@ -86,10 +84,6 @@ public class PublicService {
     public Page<ArquivoPublicoDTO> listarArquivosPublicos(Long pastaId, Pageable pageable, String extensao, String sortBy, String order) {
         Pasta pasta = pastaRepository.findById(pastaId)
                 .orElseThrow(() -> new RuntimeException("Pasta não encontrada"));
-
-        if (!Boolean.TRUE.equals(pasta.isPublica())) {
-            throw new RuntimeException("A pasta não é pública");
-        }
 
         Stream<Arquivo> streamArquivos = pasta.getArquivos().stream();
 
@@ -178,6 +172,35 @@ public class PublicService {
         }
     }
 
+    /**
+     * Retorna o conteúdo de um arquivo como Resource, pronto para visualização no navegador.
+     */
+    public Resource getArquivoParaVisualizacao(Long id) {
+        Arquivo arquivo = arquivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Arquivo não encontrado com id: " + id));
+
+        File file = new File(arquivo.getCaminhoArmazenamento());
+        if (!file.exists()) {
+            throw new RuntimeException("Arquivo físico não encontrado no servidor.");
+        }
+
+        return new FileSystemResource(file);
+    }
+
+    /**
+     * Descobre o Content-Type do arquivo para exibição correta no navegador.
+     */
+    public String getContentType(Long id) {
+        Arquivo arquivo = arquivoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Arquivo não encontrado com id: " + id));
+
+        try {
+            Path path = Path.of(arquivo.getCaminhoArmazenamento());
+            return Files.probeContentType(path); // tenta identificar o tipo de arquivo
+        } catch (Exception e) {
+            return MediaType.APPLICATION_OCTET_STREAM_VALUE; // fallback genérico
+        }
+    }
 
 
 

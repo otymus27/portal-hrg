@@ -316,7 +316,7 @@ public class ArquivoController {
 
     // Download individual de arquivo
     @GetMapping("/download/arquivo/{arquivoId}")
-    @PreAuthorize("hasAnyRole('ADMIN','GERENTE','BASIC')")
+
     public ResponseEntity<InputStreamResource> downloadArquivo(@PathVariable Long arquivoId) throws IOException {
         Arquivo arquivo = arquivoService.buscarPorId(arquivoId);
         Path caminho = Paths.get(arquivo.getCaminhoArmazenamento());
