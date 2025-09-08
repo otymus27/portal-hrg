@@ -1,10 +1,10 @@
 import {
+  isPlatformBrowser
+} from "./chunk-PHO26LGY.js";
+import {
   coerceElement,
   coerceNumberProperty
 } from "./chunk-UZRDOEGV.js";
-import {
-  isPlatformBrowser
-} from "./chunk-PHO26LGY.js";
 import {
   ApplicationRef,
   Directive,
@@ -411,4 +411,4 @@ export {
   ContentObserver,
   ObserversModule
 };
-//# sourceMappingURL=chunk-6N6IOWNR.js.map
+//# sourceMappingURL=chunk-L26GVXTZ.js.map

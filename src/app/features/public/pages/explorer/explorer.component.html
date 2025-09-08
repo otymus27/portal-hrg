@@ -1,55 +1,46 @@
 <div class="explorer-container">
-
   <!-- Loader -->
-  <div *ngIf="loading" class="loading">
-    ⏳ Carregando pastas...
+  <div *ngIf="loading" class="loading">⏳ Carregando pastas...</div>
+
+  <!-- Breadcrumb scrollável -->
+  <div *ngIf="breadcrumb.length > 0" class="breadcrumb-container">
+    <div class="breadcrumb-scroll">
+      <span *ngFor="let pasta of breadcrumb; let i = index"
+            class="breadcrumb-item"
+            (click)="navegarPara(i)">
+        {{ pasta.nome }} <span *ngIf="i < breadcrumb.length - 1"> / </span>
+      </span>
+    </div>
   </div>
 
-  <!-- Breadcrumb -->
-  <nav class="breadcrumb" *ngIf="breadcrumb.length > 0">
-    <button class="breadcrumb-home" (click)="resetExplorer()">🏠 Raiz</button>
-    <span *ngFor="let pasta of breadcrumb; let i = index">
-      <span class="breadcrumb-separator">/</span>
-      <button class="breadcrumb-item" (click)="navegarPara(i)">{{ pasta.nome }}</button>
-    </span>
-  </nav>
-
-  <!-- Cards de Pastas e Arquivos -->
-  <div class="cards-container">
+  <!-- Grid de cards -->
+  <div class="cards-grid" *ngIf="!loading">
     <!-- Pastas -->
-    <div *ngFor="let pasta of pastaAtual?.subPastas ?? pastasRaiz"
-         class="card folder-card"
-         (click)="abrirPasta(pasta)">
-      <div class="card-icon">📁</div>
-      <div class="card-name">{{ pasta.nome }}</div>
+    <div *ngFor="let pasta of pastasAtuais" class="card pasta-card" (click)="abrirPasta(pasta)" [attr.title]="pasta.nome">
+      <div class="icon">📁</div>
+      <div class="name">{{ pasta.nome }}</div>
     </div>
 
     <!-- Arquivos -->
-    <div *ngFor="let arquivo of pastaAtual?.arquivos ?? []"
-         class="card file-card"
-         (click)="abrirArquivoModal(arquivo)">
-      <div class="card-icon">📄</div>
-      <div class="card-name">{{ arquivo.nome }}</div>
+    <div *ngFor="let arquivo of arquivos" class="card arquivo-card" (click)="abrirArquivo(arquivo)" [attr.title]="arquivo.nome">
+      <div class="icon">📄</div>
+      <div class="name">{{ arquivo.nome }}</div>
     </div>
   </div>
 
-  <!-- Modal de arquivo -->
-  <div class="modal" *ngIf="arquivoSelecionado">
-    <div class="modal-content">
-      <h3>Arquivo: {{ arquivoSelecionado.nome }}</h3>
-      <p>Tamanho: {{ arquivoSelecionado.tamanho | number }} KB</p>
-      <p>Tipo: {{ arquivoSelecionado.tipoMime }}</p>
-      <div class="modal-actions">
-        <button (click)="baixarArquivo(arquivoSelecionado)">⬇️ Baixar</button>
-        <button (click)="visualizarArquivo(arquivoSelecionado)">👁️ Visualizar</button>
-        <button (click)="fecharModal()">❌ Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Nenhuma pasta encontrada -->
-  <p *ngIf="!loading && (pastaAtual?.subPastas?.length === 0) && (pastaAtual?.arquivos?.length === 0)">
-    Nenhuma pasta ou arquivo nesta pasta.
+  <p *ngIf="!loading && pastasAtuais.length === 0 && arquivos.length === 0" class="empty-state">
+    Nenhum item encontrado nesta pasta.
   </p>
+</div>
 
+<!-- Modal de arquivo -->
+<div class="modal" *ngIf="arquivoSelecionado">
+  <div class="modal-content animate">
+    <span class="close" (click)="fecharModal()">&times;</span>
+    <h3>{{ arquivoSelecionado.nome }}</h3>
+    <div class="modal-buttons">
+      <button (click)="visualizarArquivo(arquivoSelecionado)">👁️ Visualizar</button>
+      <button (click)="baixarArquivo(arquivoSelecionado)">⬇️ Baixar</button>
+    </div>
+  </div>
 </div>

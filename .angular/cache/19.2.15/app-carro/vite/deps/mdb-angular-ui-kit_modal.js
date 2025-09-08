@@ -4,13 +4,7 @@ import {
   Platform,
   _CdkPrivateStyleLoader,
   _bindEventWithOptions
-} from "./chunk-6N6IOWNR.js";
-import {
-  coerceArray,
-  coerceCssPixelValue,
-  coerceElement,
-  coerceNumberProperty
-} from "./chunk-UZRDOEGV.js";
+} from "./chunk-L26GVXTZ.js";
 import {
   CommonModule,
   Location,
@@ -19,6 +13,12 @@ import {
 import {
   DOCUMENT
 } from "./chunk-PHO26LGY.js";
+import {
+  coerceArray,
+  coerceCssPixelValue,
+  coerceElement,
+  coerceNumberProperty
+} from "./chunk-UZRDOEGV.js";
 import {
   ANIMATION_MODULE_TYPE,
   APP_ID,
