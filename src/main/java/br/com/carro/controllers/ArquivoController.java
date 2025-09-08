@@ -27,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -164,26 +165,25 @@ public class ArquivoController {
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     public ResponseEntity<?> renomearArquivo(
             @PathVariable Long arquivoId,
-            @RequestParam String novoNome,
+            @RequestBody Map<String, String> requestBody, // Altere aqui
             Authentication authentication
-           ) {
+    ) {
+        String novoNome = requestBody.get("novoNome");
+
+        if (novoNome == null || novoNome.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("O novo nome não pode ser vazio.");
+        }
 
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             ArquivoDTO arquivoRenomeado = arquivoService.renomearArquivo(arquivoId, novoNome, usuarioLogado);
             return ResponseEntity.ok(arquivoRenomeado);
-
         } catch (RuntimeException e) {
-            // Erros de negócio: arquivo não encontrado ou sem permissão
             return ResponseEntity.badRequest().body(e.getMessage());
-
         } catch (IOException e) {
-            // Erros de I/O (problemas ao renomear fisicamente o arquivo)
             return ResponseEntity.internalServerError()
                     .body("Erro ao renomear arquivo no sistema de arquivos: " + e.getMessage());
-
         } catch (Exception e) {
-            // Fallback para qualquer outra exceção inesperada
             return ResponseEntity.internalServerError()
                     .body("Erro inesperado ao renomear o arquivo: " + e.getMessage());
         }
@@ -232,7 +232,7 @@ public class ArquivoController {
     /**
      * RF-022: Excluir múltiplos ou todos os arquivos de uma pasta
      *
-     * Ex.: POST /api/arquivos/pasta/10/excluir
+     * Ex.: DELETE /api/arquivos/pasta/10/excluir
      *      body = { "arquivoIds": [1,2,3] } ou vazio para todos
      */
     @DeleteMapping("/pasta/{pastaId}/excluir")
@@ -316,7 +316,6 @@ public class ArquivoController {
 
     // Download individual de arquivo
     @GetMapping("/download/arquivo/{arquivoId}")
-
     public ResponseEntity<InputStreamResource> downloadArquivo(@PathVariable Long arquivoId) throws IOException {
         Arquivo arquivo = arquivoService.buscarPorId(arquivoId);
         Path caminho = Paths.get(arquivo.getCaminhoArmazenamento());
@@ -324,7 +323,7 @@ public class ArquivoController {
         InputStreamResource resource = new InputStreamResource(Files.newInputStream(caminho));
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + arquivo.getNomeArquivo())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + arquivo.getNomeArquivo() + "\"")
                 .contentLength(Files.size(caminho))
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);

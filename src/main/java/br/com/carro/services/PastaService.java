@@ -4,7 +4,6 @@ import br.com.carro.entities.Arquivo;
 import br.com.carro.entities.DTO.*;
 import br.com.carro.entities.Pasta;
 import br.com.carro.entities.Usuario.Usuario;
-import br.com.carro.exceptions.ResourceNotFoundException;
 import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import br.com.carro.repositories.UsuarioRepository;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;

@@ -10,6 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -116,6 +117,7 @@ public class SecurityConfigurations {
          configuration.addAllowedOrigin("http://10.85.190.202:86"); // IP da sua máquina servidor
          configuration.addAllowedMethod("*"); // GET, POST, etc.
          configuration.addAllowedHeader("*"); // Authorization, Content-Type...
+         configuration.addExposedHeader(HttpHeaders.CONTENT_DISPOSITION);
          configuration.setAllowCredentials(true); // se usar cookies ou auth
          configuration.setMaxAge(3600L);
 
@@ -140,20 +142,11 @@ public class SecurityConfigurations {
                                 // ✅ Permite acesso a qualquer rota pública (incluindo as novas)
                                 .requestMatchers(HttpMethod.GET, "/api/publico/**").permitAll()
 
-
                                 .requestMatchers(HttpMethod.GET, "/api/privado/pastas/download").authenticated() // ✅ Novo: Protege especificamente o download
-
-
-
 
                                 .anyRequest().authenticated()
                 )
 
-                .headers(headers -> headers
-                        .frameOptions(frameOptions -> frameOptions
-                                .sameOrigin() // Permite que a página seja exibida em um iframe somente se for do mesmo domínio
-                        )
-                )
 
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))) // Configura o servidor de recursos OAuth2 para usar JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // Garante que sessões não serão criadas
