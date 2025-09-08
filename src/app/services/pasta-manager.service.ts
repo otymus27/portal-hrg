@@ -15,7 +15,7 @@ export interface FileItem {
   providedIn: 'root',
 })
 export class PastaManager {
-  private apiUrl = 'http://localhost:8082/api/pasta';
+  private apiUrl = 'http://localhost:8082/api/pastas';
 
   constructor(private http: HttpClient) {}
 
@@ -25,7 +25,7 @@ export class PastaManager {
    * @returns Observable com a lista de itens.
    */
   getTopLevelFolders(): Observable<FileItem[]> {
-    return this.http.get<FileItem[]>(`${this.apiUrl}/top-level`).pipe(
+    return this.http.get<FileItem[]>(`${this.apiUrl}/arvore`).pipe(
       map((response) =>
         response.map((item) => ({
           id: item.id,
