@@ -1,0 +1,219 @@
+<br />
+<div class="container-xl">
+  <div class="card">
+    <div class="card-body">
+      <div
+        class="d-flex justify-content-between align-items-center bg-dark text-white p-3"
+      >
+        <h1 class="mb-0">Gerenciamento de Marcas</h1>
+         <!-- Aqui vai exibir o botão só para o perfil admin e gerente -->
+        <button        
+          class="btn btn-primary btn-rounded btn-shadow me-2"
+          (click)="CadastrarModal()"
+          *ngIf="isAdmin() || isGerente"
+        >
+          <i class="bi bi-plus-circle me-1"></i> Novo
+        </button>
+      </div>
+
+      <!-- Barra de pesquisa -->
+      <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+        <input
+          type="text"
+          class="form-control me-2"
+          placeholder="Pesquisar por parte do nome"
+          [(ngModel)]="filtro"
+          (keyup.enter)="aplicarFiltro()"
+        />
+
+        <button class="btn btn-primary ms-2" (click)="aplicarFiltro()">
+          <i class="bi bi-search"></i> Pesquisar
+        </button>
+      </div>
+
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th (click)="ordenarPor('nome')" style="cursor: pointer">
+              Nome
+              <i *ngIf="colunaOrdenada === 'nome'" class="bi" 
+                 [ngClass]="{'bi-caret-up-fill': ordem === 'asc', 'bi-caret-down-fill': ordem === 'desc'}"></i>
+            </th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (marca of lista; track marca.id) {
+          <tr>
+            <td>{{ marca.nome }}</td>
+            <td>
+              <!-- Botão Editar -->
+               <!-- Aqui vai exibir o botão só para o perfil admin e gerente -->
+              <button
+                class="btn btn-warning btn-sm btn-shadow me-1"
+                *ngIf="isAdmin() || isGerente"
+                (click)="editarModal(marca)"
+                title="Editar"
+              >
+                <i class="bi bi-pencil-square"></i>
+              </button>
+
+              <!-- Botão Excluir -->
+               <!-- Aqui vai exibir o botão só para o perfil admin-->
+              <button
+                class="btn btn-danger btn-sm btn-shadow"
+                *ngIf="isAdmin()"
+                (click)="excluir(marca)"
+                title="Excluir"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Paginação estilizada com contador na mesma linha -->
+      <div
+        class="d-flex justify-content-between align-items-center mt-4 flex-wrap bg-light text-white p-3"
+      >
+        <div class="text-muted me-3">
+          <small>
+            Exibindo página <strong>{{ page + 1 }}</strong> de
+            <strong>{{ totalPages }}</strong> — Total de registros:
+            <strong>{{ totalElements }}</strong>
+          </small>
+        </div>
+
+        <!-- Navegação -->
+        <nav>
+          <ul class="pagination mb-0">
+            <!-- Botão Anterior -->
+            <li class="page-item" [class.disabled]="page === 0">
+              <button
+                class="page-link"
+                (click)="paginaAnterior()"
+                [disabled]="page === 0"
+              >
+                ‹ Anterior
+              </button>
+            </li>
+
+            <!-- Páginas -->
+            <li
+              *ngFor="let p of [].constructor(totalPages); let i = index"
+              class="page-item"
+              [class.active]="i === page"
+            >
+              <button class="page-link" (click)="irParaPagina(i)">
+                {{ i + 1 }}
+              </button>
+            </li>
+
+            <!-- Botão Próximo -->
+            <li class="page-item" [class.disabled]="page + 1 >= totalPages">
+              <button
+                class="page-link"
+                (click)="proximaPagina()"
+                [disabled]="page + 1 >= totalPages"
+              >
+                Próxima ›
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal  -->
+<ng-template #modalMarcaDetalhe>
+  <div class="modal-header bg-primary">
+    <h5 class="modal-title fw-bold">
+      {{ registroSelecionado.id > 0 ? "Editar Marca" : "Novo Marca" }}
+    </h5>
+    <button type="button" class="btn-close" (click)="cancelarModal()"></button>
+  </div>
+
+  <div class="modal-body d-flex justify-content-center">
+    <form #form="ngForm" (ngSubmit)="salvarMarca(registroSelecionado)">
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 100px">Nome:</label>
+        <input
+          mdbInput
+          [(ngModel)]="registroSelecionado.nome"
+          #nome="ngModel"
+          name="nome"
+          required
+          class="form-control flex-grow-1"
+        />
+      </div>
+      <div *ngIf="nome.invalid && (nome.dirty || nome.touched)" class="text-danger text-center">
+        O campo <strong>Nome</strong> é obrigatório.
+      </div>     
+
+     
+    </form>
+  </div>
+
+  <div class="modal-footer d-flex justify-content-center bg-dark">
+    <button
+      class="btn btn-primary me-2"
+      [disabled]="form.invalid"
+      (click)="salvarMarca(registroSelecionado)"
+    >
+      Salvar
+    </button>
+    <button type="button" class="btn btn-secondary" (click)="cancelarModal()">
+      Cancelar
+    </button>
+  </div>
+</ng-template>
+
+<!-- Modal Confirmação Exclusão -->
+<ng-template #modalConfirmacaoExclusao>
+  <div class="modal-header bg-danger text-white">
+    <h5 class="modal-title fw-bold">Confirmação de Exclusão</h5>
+    <button type="button" class="btn-close" (click)="cancelarModal()"></button>
+  </div>
+
+  <div class="modal-body">
+    <p>
+      Tem certeza que deseja excluir o proprietário
+      <strong>{{ registroSelecionado?.nome }}</strong>?
+    </p>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="cancelarModal()">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn-danger" (click)="excluirConfirmado()">
+      Excluir
+    </button>
+  </div>
+</ng-template>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  @for (toast of toastService.messages$ | async; track toast) {
+    <div 
+      class="toast show" 
+      [ngClass]="{
+        'bg-success': toast.type === 'success',
+        'bg-danger': toast.type === 'danger',
+        'bg-info': toast.type === 'info'
+      }" 
+      role="alert" 
+      aria-live="assertive" 
+      aria-atomic="true">
+      <div class="toast-header border-0 bg-transparent text-white">
+        <strong class="me-auto text-capitalize">{{ toast.type }}</strong>
+      </div>
+      <div class="toast-body text-white">
+        {{ toast.message }}
+      </div>
+    </div>
+  }
+</div>

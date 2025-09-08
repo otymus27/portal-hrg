@@ -1,0 +1,101 @@
+<div class="explorer-container">
+  <header class="explorer-header">
+    <h2 class="explorer-title">Explorador de Protocolos</h2>
+  </header>
+
+  <div class="action-menu">
+    <button class="menu-button" (click)="voltar()" [disabled]="!caminhoAtual">
+      <i class="fas fa-arrow-up"></i> Voltar
+    </button>
+    <button
+      class="menu-button"
+      (click)="navegarParaRaiz()"
+      [disabled]="!caminhoAtual"
+    >
+      <i class="fas fa-folder"></i> Raiz
+    </button>
+    <button class="menu-button" (click)="navegarParaHome()">
+      <i class="fas fa-home"></i> Home
+    </button>
+  </div>
+
+  <div class="breadcrumb-container">
+    <span *ngIf="caminhoAtual" class="breadcrumb-separator">/</span>
+
+    <ng-container *ngIf="caminhoAtual">
+      <span
+        *ngFor="let parte of caminhoCompleto; let i = index"
+        class="breadcrumb-item"
+      >
+        <a
+          class="breadcrumb-link"
+          (click)="
+            navegarParaCaminho(caminhoCompleto.slice(0, i + 1).join('/'))
+          "
+          >{{ parte }}</a
+        >
+        <span
+          *ngIf="i < caminhoCompleto.length - 1"
+          class="breadcrumb-separator"
+          >></span
+        >
+      </span>
+    </ng-container>
+
+    <span *ngIf="!caminhoAtual" class="breadcrumb-item">Pasta Raiz</span>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-message">
+    <i class="fas fa-spinner fa-spin"></i> Carregando...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+  </div>
+
+  <ul class="file-list" *ngIf="!isLoading && !errorMessage">
+    <li *ngIf="pastas.length === 0">
+      <span class="no-content">Esta pasta está vazia.</span>
+    </li>
+    <li *ngFor="let item of pastas" class="file-list-item">
+      <a class="file-link" (click)="navegarPara(item)">
+        <span class="file-icon">
+          <ng-container *ngIf="item.isDiretorio">
+            <i class="fas fa-folder folder"></i>
+          </ng-container>
+          <ng-container *ngIf="!item.isDiretorio">
+            <i class="fas file" [ngClass]="obterIconePorTipo(item.nome)"></i>
+          </ng-container>
+        </span>
+        <div class="file-info-container">
+          <span class="file-name">{{ item.nome }}</span>
+          <span class="file-info">
+            <ng-container *ngIf="item.isDiretorio && item.contagem !== undefined && item.contagem !== null">
+              ({{ item.contagem }} itens)
+            </ng-container>
+            <ng-container *ngIf="!item.isDiretorio && item.tamanho !== undefined && item.tamanho !== null">
+              ({{ item.tamanho.toFixed(2) }} KB)
+            </ng-container>
+          </span>
+        </div>
+      </a>
+    </li>
+  </ul>
+
+  <!-- ✅ Adicionado: Modal de Confirmação -->
+  <div class="modal-overlay" *ngIf="showConfirmationModal">
+    <div class="modal-content">
+      <h3 class="modal-title">Abrir ou Baixar?</h3>
+      <p class="modal-message">O que você gostaria de fazer com o arquivo **{{ selectedFile?.nome }}**?</p>
+      <div class="modal-actions">
+        <button class="modal-button open" (click)="onOpenClick()">
+          <i class="fas fa-eye"></i> Abrir
+        </button>
+        <button class="modal-button download" (click)="onDownloadClick()">
+          <i class="fas fa-download"></i> Fazer Download
+        </button>
+      </div>
+      <button class="modal-button cancel" (click)="closeConfirmationModal()">Cancelar</button>
+    </div>
+  </div>
+</div>

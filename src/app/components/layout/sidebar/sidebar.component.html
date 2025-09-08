@@ -1,0 +1,125 @@
+<div class="sidebar" [class.active]="isCollapsed">
+  <div class="header">
+    <button class="btn btn-transparent" (click)="toggle()">
+      <i class="bi bi-list"></i>
+    </button>
+  </div>
+  <ul class="nav flex-column">
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        routerLink="/admin/home"
+        routerLinkActive="active"
+        (click)="hideAllSubmenus()"
+      >
+        <i class="bi bi-house-door"></i>
+        <span>Início</span>
+      </a>
+    </li>
+
+    <!-- Aqui vai exibir o menu para o perfl de gerente e basic -->
+    <li class="nav-item" *ngIf="isGerente || isBasic">
+      <a class="nav-link" (click)="toggleSubmenu('marcas')">
+        <i class="bi bi-bookmark"></i>
+        <span>Marcas</span>
+        <i
+          class="bi bi-chevron-down submenu-icon"
+          [class.rotated]="showMarcasSubmenu"
+        ></i>
+      </a>
+      <ul class="submenu" *ngIf="showMarcasSubmenu">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/marcas/consulta"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <i class="bi bi-list-ul"></i>
+            <span>Consulta</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/marcas/gerenciar"
+            routerLinkActive="active"
+          >
+            <i class="bi bi-plus-circle"></i>
+            <span>Gerenciar</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Aqui vai exibir o menu para o perfl de gerente e basic -->
+    <li class="nav-item" *ngIf="isGerente || isBasic">
+      <a class="nav-link" (click)="toggleSubmenu('pastas')">
+        <i class="bi bi-bookmark"></i>
+        <span>Pastas</span>
+        <i
+          class="bi bi-chevron-down submenu-icon"
+          [class.rotated]="showPastasSubmenu"
+        ></i>
+      </a>
+      <ul class="submenu" *ngIf="showPastasSubmenu">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/pastas/consulta"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <i class="bi bi-list-ul"></i>
+            <span>Consulta</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/pastas/gerenciar"
+            routerLinkActive="active"
+          >
+            <i class="bi bi-plus-circle"></i>
+            <span>Gerenciar</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Aqui vai exibir o menu só para o perfil admin -->
+    <li class="nav-item" *ngIf="isAdmin()">
+      <a class="nav-link" (click)="toggleSubmenu('usuarios')">
+        <i class="bi bi-person"></i>
+        <span>Usuários</span>
+        <i
+          class="bi bi-chevron-down submenu-icon"
+          [class.rotated]="showUsuariosSubmenu"
+        ></i>
+      </a>
+      <ul class="submenu" *ngIf="showUsuariosSubmenu">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/usuarios"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <i class="bi bi-list-ul"></i>
+            <span>Consulta</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/usuarios/gerenciar"
+            routerLinkActive="active"
+          >
+            <i class="bi bi-plus-circle"></i>
+            <span>Gerenciar</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>

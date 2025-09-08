@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teste de Funcionalidades do Portal de Arquivos</title>
+    <style>
+      :root {
+        --primary-color: #1a73e8;
+        --secondary-color: #0d47a1;
+        --bg-color: #f0f2f5;
+        --container-bg-color: #fff;
+        --section-bg-color: #fdfdfd;
+        --text-color: #333;
+        --border-color: #e0e0e0;
+        --input-border-color: #ccc;
+        --log-bg-color: #e9ecef;
+        --log-success-color: #28a745;
+        --log-error-color: #dc3545;
+      }
+
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        margin: 0;
+        line-height: 1.6;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 40px 20px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 900px;
+        padding: 30px;
+        background-color: var(--container-bg-color);
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+      }
+
+      .section {
+        margin-bottom: 2em;
+        padding: 20px;
+        background-color: var(--section-bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+      }
+
+      h1 {
+        text-align: center;
+        color: var(--primary-color);
+        border-bottom: 3px solid var(--primary-color);
+        padding-bottom: 0.75em;
+        margin-bottom: 1.5em;
+        font-weight: 700;
+        font-size: 2.2em;
+      }
+
+      h2 {
+        color: #3c4043;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5em;
+        margin-bottom: 1em;
+        font-size: 1.5em;
+        font-weight: 600;
+      }
+
+      .input-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .input-full {
+        grid-column: 1 / -1;
+      }
+
+      .input-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #555;
+        cursor: pointer;
+      }
+
+      .token-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      textarea,
+      input[type="file"] {
+        width: 100%;
+        padding: 14px;
+        border-radius: 8px;
+        border: 1px solid var(--input-border-color);
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      input[type="text"]:focus,
+      input[type="number"]:focus,
+      textarea:focus,
+      input[type="file"]:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+        outline: none;
+      }
+
+      button {
+        padding: 14px 24px;
+        border-radius: 8px;
+        border: none;
+        background-color: var(--primary-color);
+        color: white;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.1s ease;
+        white-space: nowrap;
+      }
+
+      button:hover {
+        background-color: var(--secondary-color);
+        transform: translateY(-2px);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .token-actions button {
+        padding: 10px 18px;
+        background-color: #6c757d;
+      }
+
+      /* Estilo da lista de arquivos */
+      #listaArquivos {
+        list-style: none;
+        padding: 0;
+      }
+
+      #listaArquivos li {
+        background-color: #e9e9e9;
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      #listaArquivos li button {
+        background-color: var(--log-error-color);
+        padding: 5px 10px;
+        font-size: 12px;
+        border-radius: 5px;
+      }
+
+      #log {
+        margin-top: 25px;
+        padding: 20px;
+        background-color: var(--log-bg-color);
+        border: 1px solid #ddd;
+        height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 13px;
+        border-radius: 8px;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 20px;
+          margin: 10px;
+        }
+
+        .input-group {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 1.8em;
+        }
+
+        h2 {
+          font-size: 1.3em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Testar Funcionalidades do Portal de Arquivos</h1>
+      <div class="section">
+        <h2>Autenticação</h2>
+        <p>Insira seu token JWT para autenticar as requisições:</p>
+        <div class="input-full">
+          <textarea
+            id="jwt-token"
+            rows="3"
+            placeholder="Cole seu token JWT aqui..."
+          ></textarea>
+        </div>
+        <div class="token-actions">
+          <label>
+            <input type="checkbox" id="lembrar-token" /> Lembrar token
+          </label>
+          <button onclick="toggleTokenVisibility()">Ocultar</button>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Criação de Pastas</h2>
+        <p>Crie uma nova pasta em um local específico ou na raiz.</p>
+        <div class="input-group">
+          <input
+            type="text"
+            id="nomePastaCriar"
+            placeholder="Nome da pasta"
+            class="input-full"
+          />
+          <input
+            type="number"
+            id="pastaPaiIdCriar"
+            placeholder="ID da pasta pai (opcional)"
+          />
+          <input
+            type="text"
+            id="usuariosComPermissaoIdsCriar"
+            placeholder="IDs de usuários (ex: 1,2,3)"
+          />
+        </div>
+        <button onclick="criarPasta()">Criar Pasta</button>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Upload de Conteúdo</h2>
+        <p>Envie arquivos para uma pasta existente.</p>
+        <div class="input-group">
+          <input type="file" id="uploadFile" multiple />
+          <input
+            type="number"
+            id="pastaIdUploadFile"
+            placeholder="ID da pasta destino"
+            value="1"
+          />
+          <button onclick="uploadFiles()">Upload de Arquivos</button>
+        </div>
+        <div
+          class="form-group"
+          id="containerListaArquivos"
+          style="display: none"
+        >
+          <label>Arquivos para Envio:</label>
+          <ul id="listaArquivos"></ul>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Substituir Conteúdo</h2>
+        <p>Substitua o conteúdo de uma pasta ou arquivo existente.</p>
+        <div class="input-group">
+          <input
+            type="number"
+            id="idOrigemSubstituirPasta"
+            placeholder="ID da pasta de origem"
+          />
+          <input
+            type="number"
+            id="idDestinoSubstituirPasta"
+            placeholder="ID da pasta a substituir"
+          />
+          <button onclick="substituirPasta()">Substituir Pasta</button>
+        </div>
+        <div class="input-group">
+          <input type="file" id="substituirFile" />
+          <input
+            type="number"
+            id="arquivoIdSubstituirFile"
+            placeholder="ID do arquivo a substituir"
+          />
+          <button onclick="substituirArquivo()">Substituir Arquivo</button>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Download</h2>
+        <p>Insira o ID para baixar o arquivo ou a pasta.</p>
+        <div class="input-group">
+          <input
+            type="number"
+            id="arquivoIdDownload"
+            placeholder="ID do arquivo"
+          />
+          <button onclick="downloadFile()">Download Arquivo</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="pastaIdDownload" placeholder="ID da pasta" />
+          <button onclick="downloadPasta()">Download Pasta</button>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Renomear</h2>
+        <p>Insira o ID do recurso e o novo nome para renomeá-lo.</p>
+        <div class="input-group">
+          <input
+            type="number"
+            id="arquivoIdRenomear"
+            placeholder="ID do arquivo"
+          />
+          <input
+            type="text"
+            id="novoNomeArquivo"
+            placeholder="Novo nome do arquivo"
+          />
+          <button onclick="renomearArquivo()">Renomear Arquivo</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="pastaIdRenomear" placeholder="ID da pasta" />
+          <input
+            type="text"
+            id="novoNomePasta"
+            placeholder="Novo nome da pasta"
+          />
+          <button onclick="renomearPasta()">Renomear Pasta</button>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Mover</h2>
+        <p>Mova um arquivo ou pasta para um novo destino.</p>
+        <div class="input-group">
+          <input
+            type="number"
+            id="arquivoIdMover"
+            placeholder="ID do arquivo"
+          />
+          <input
+            type="number"
+            id="destinoPastaIdMoverArquivo"
+            placeholder="ID da pasta destino"
+          />
+          <button onclick="moverArquivo()">Mover Arquivo</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="pastaIdMover" placeholder="ID da pasta" />
+          <input
+            type="number"
+            id="novaPastaPaiIdMover"
+            placeholder="ID da pasta pai destino"
+          />
+          <button onclick="moverPasta()">Mover Pasta</button>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Exclusão</h2>
+        <p>Insira o ID para excluir permanentemente o recurso.</p>
+        <div class="input-group">
+          <input
+            type="number"
+            id="arquivoIdExcluir"
+            placeholder="ID do arquivo"
+          />
+          <button onclick="excluirArquivo()">Excluir Arquivo</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="pastaIdExcluir" placeholder="ID da pasta" />
+          <button onclick="excluirPasta()">Excluir Pasta</button>
+        </div>
+        <div class="input-group">
+          <input
+            type="text"
+            id="idsExcluirLote"
+            placeholder="IDs das pastas (ex: 1,2,3)"
+          />
+          <button onclick="excluirPastasEmLote()">Excluir Lote</button>
+        </div>
+
+        <div class="input-group">
+          <input
+            type="number"
+            id="pastaIdExcluirArquivosEmLote"
+            placeholder="ID da pasta"
+          />
+          <input
+            type="text"
+            id="arquivosIdsExcluirLote"
+            placeholder="IDs dos arquivos (ex: 1,2,3)"
+          />
+          <button onclick="excluirArquivosEmLote()">
+            Excluir Arquivos em Lote
+          </button>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Cópia</h2>
+        <p>Copie um arquivo ou pasta para um novo destino.</p>
+        <div class="input-group">
+          <input
+            type="number"
+            id="arquivoIdCopiar"
+            placeholder="ID do arquivo"
+          />
+          <input
+            type="number"
+            id="pastaDestinoIdCopiarArquivo"
+            placeholder="ID da pasta destino"
+          />
+          <button onclick="copiarArquivo()">Copiar Arquivo</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="pastaIdCopiar" placeholder="ID da pasta" />
+          <input
+            type="number"
+            id="destinoPastaIdCopiarPasta"
+            placeholder="ID da pasta destino"
+          />
+          <button onclick="copiarPasta()">Copiar Pasta</button>
+        </div>
+      </div>
+
+      ---
+
+      <div class="section">
+        <h2>Log de Respostas</h2>
+        <pre id="log">Seu log de requisições aparecerá aqui.</pre>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:8082/api";
+      const logElement = document.getElementById("log");
+      const jwtTokenInput = document.getElementById("jwt-token");
+      const lembrarTokenCheckbox = document.getElementById("lembrar-token");
+
+      // Array global para armazenar os arquivos selecionados
+      let arquivosSelecionados = [];
+
+      window.onload = () => {
+        const tokenSalvo = localStorage.getItem("jwtToken");
+        if (tokenSalvo) {
+          jwtTokenInput.value = tokenSalvo;
+          lembrarTokenCheckbox.checked = true;
+        }
+      };
+
+      function logMessage(message, type = "info") {
+        const timestamp = `[${new Date().toLocaleTimeString()}]`;
+        let color = "#333";
+        if (type === "error") color = "var(--log-error-color)";
+        if (type === "success") color = "var(--log-success-color)";
+        if (type === "warning") color = "orange";
+
+        logElement.innerHTML += `<span style="color: ${color};">${timestamp} ${message}</span>\n`;
+        logElement.scrollTop = logElement.scrollHeight;
+      }
+
+      function limparCampos(...elementIds) {
+        elementIds.forEach((id) => {
+          const element = document.getElementById(id);
+          if (element) {
+            if (element.type === "file") {
+              element.value = "";
+            } else {
+              element.value = "";
+            }
+          }
+        });
+      }
+
+      function getHeaders(contentType = "application/json") {
+        const token = jwtTokenInput.value.trim();
+        if (lembrarTokenCheckbox.checked) {
+          localStorage.setItem("jwtToken", token);
+        } else {
+          localStorage.removeItem("jwtToken");
+        }
+
+        if (!token) {
+          logMessage("Erro: Token JWT não fornecido.", "error");
+          return null;
+        }
+
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
+
+        if (contentType) {
+          headers["Content-Type"] = contentType;
+        }
+        return headers;
+      }
+
+      async function enviarRequisicao(url, method, body, contentType) {
+        const headers = getHeaders(contentType);
+        if (!headers) return;
+
+        const config = { method, headers };
+        if (body) {
+          config.body = body;
+        }
+
+        try {
+          const response = await fetch(url, config);
+          const text = await response.text();
+          if (response.ok) {
+            logMessage(
+              `Sucesso! Status: ${response.status}. Resposta: ${text}`,
+              "success"
+            );
+          } else {
+            logMessage(
+              `Erro! Status: ${response.status}. Resposta: ${text}`,
+              "error"
+            );
+          }
+          return response;
+        } catch (error) {
+          logMessage(`Erro na requisição: ${error}`, "error");
+          return null;
+        }
+      }
+
+      function toggleTokenVisibility() {
+        const button = event.target;
+        if (jwtTokenInput.type === "password") {
+          jwtTokenInput.type = "text";
+          button.textContent = "Ocultar";
+        } else {
+          jwtTokenInput.type = "password";
+          button.textContent = "Mostrar";
+        }
+      }
+
+      async function criarPasta() {
+        const nome = document.getElementById("nomePastaCriar").value;
+        const pastaPaiId = document.getElementById("pastaPaiIdCriar").value;
+        const usuariosComPermissaoIds = document.getElementById(
+          "usuariosComPermissaoIdsCriar"
+        ).value;
+
+        if (!nome) {
+          logMessage("Erro: Nome da pasta é obrigatório.", "error");
+          return;
+        }
+
+        const usuariosArray = usuariosComPermissaoIds
+          ? usuariosComPermissaoIds.split(",").map((id) => Number(id.trim()))
+          : [];
+
+        const data = {
+          nome: nome,
+          pastaPaiId: pastaPaiId ? Number(pastaPaiId) : null,
+          usuariosComPermissaoIds: usuariosArray,
+        };
+
+        logMessage(`Tentando criar pasta '${nome}'...`);
+        await enviarRequisicao(
+          `${API_URL}/pastas`,
+          "POST",
+          JSON.stringify(data)
+        );
+        limparCampos(
+          "nomePastaCriar",
+          "pastaPaiIdCriar",
+          "usuariosComPermissaoIdsCriar"
+        );
+      }
+
+      // Nova função para gerenciar a lista de arquivos na tela
+      function gerenciarListaArquivos(event) {
+        const files = event.target.files;
+        const lista = document.getElementById("listaArquivos");
+        const containerLista = document.getElementById(
+          "containerListaArquivos"
+        );
+
+        // Exibe o container da lista de arquivos
+        if (files.length > 0) {
+          containerLista.style.display = "block";
+        }
+
+        for (const file of files) {
+          // Verifica se o arquivo já foi adicionado para evitar duplicatas
+          const fileExists = arquivosSelecionados.some(
+            (f) => f.name === file.name && f.size === file.size
+          );
+          if (fileExists) {
+            logMessage(
+              `O arquivo '${file.name}' já foi adicionado.`,
+              "warning"
+            );
+            continue;
+          }
+
+          // Adiciona o arquivo ao array global
+          arquivosSelecionados.push(file);
+
+          const li = document.createElement("li");
+          li.textContent = file.name;
+
+          const removeButton = document.createElement("button");
+          removeButton.textContent = "Remover";
+          removeButton.onclick = () => {
+            // Remove o arquivo do array e do elemento <li>
+            const index = arquivosSelecionados.indexOf(file);
+            if (index > -1) {
+              arquivosSelecionados.splice(index, 1);
+            }
+            li.remove();
+
+            // Oculta a lista se não houver mais arquivos
+            if (arquivosSelecionados.length === 0) {
+              containerLista.style.display = "none";
+            }
+          };
+
+          li.appendChild(removeButton);
+          lista.appendChild(li);
+        }
+      }
+
+      // Adiciona o "listener" para o evento de mudança do input de arquivo
+      document
+        .getElementById("uploadFile")
+        .addEventListener("change", gerenciarListaArquivos);
+
+      async function uploadFiles() {
+        // Agora, usa o array global de arquivos
+        const files = arquivosSelecionados;
+        const pastaId = document.getElementById("pastaIdUploadFile").value;
+
+        if (files.length === 0 || !pastaId) {
+          logMessage(
+            "Erro: Selecione arquivos e informe o ID da pasta.",
+            "error"
+          );
+          return;
+        }
+
+        const formData = new FormData();
+        for (const file of files) {
+          formData.append("arquivos", file);
+        }
+
+        logMessage(
+          `Tentando fazer upload de ${files.length} arquivos para a pasta '${pastaId}'...`
+        );
+        const headers = getHeaders(null);
+        if (!headers) return;
+        delete headers["Content-Type"];
+
+        const config = {
+          method: "POST",
+          headers,
+          body: formData,
+        };
+
+        try {
+          const response = await fetch(
+            `${API_URL}/arquivos/pasta/${pastaId}/upload-multiplos`,
+            config
+          );
+          const text = await response.text();
+          if (response.ok) {
+            logMessage(
+              `Sucesso! Status: ${response.status}. Resposta: ${text}`,
+              "success"
+            );
+            // Limpa a lista e o input após o sucesso
+            document.getElementById("listaArquivos").innerHTML = "";
+            document.getElementById("containerListaArquivos").style.display =
+              "none";
+            document.getElementById("uploadFile").value = "";
+            arquivosSelecionados = [];
+          } else {
+            logMessage(
+              `Erro! Status: ${response.status}. Resposta: ${text}`,
+              "error"
+            );
+          }
+        } catch (error) {
+          logMessage(`Erro na requisição: ${error}`, "error");
+        }
+      }
+
+      async function substituirPasta() {
+        const idOrigem = document.getElementById(
+          "idOrigemSubstituirPasta"
+        ).value;
+        const idDestino = document.getElementById(
+          "idDestinoSubstituirPasta"
+        ).value;
+
+        if (!idOrigem || !idDestino) {
+          logMessage("Erro: ID de origem e destino são obrigatórios.", "error");
+          return;
+        }
+
+        logMessage(
+          `Tentando substituir pasta '${idDestino}' por '${idOrigem}'...`
+        );
+        await enviarRequisicao(
+          `${API_URL}/pastas/${idDestino}/substituir/${idOrigem}`,
+          "PUT"
+        );
+        limparCampos("idOrigemSubstituirPasta", "idDestinoSubstituirPasta");
+      }
+
+      async function substituirArquivo() {
+        const file = document.getElementById("substituirFile").files[0];
+        const arquivoId = document.getElementById(
+          "arquivoIdSubstituirFile"
+        ).value;
+
+        if (!file || !arquivoId) {
+          logMessage(
+            "Erro: Selecione um arquivo e informe o ID do arquivo a ser substituído.",
+            "error"
+          );
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("arquivo", file);
+
+        logMessage(`Tentando substituir o arquivo com ID '${arquivoId}'...`);
+        const headers = getHeaders(null);
+        if (!headers) return;
+        delete headers["Content-Type"];
+
+        const config = {
+          method: "POST",
+          headers,
+          body: formData,
+        };
+
+        try {
+          const response = await fetch(
+            `${API_URL}/arquivos/${arquivoId}/substituir`,
+            config
+          );
+          const text = await response.text();
+          if (response.ok) {
+            logMessage(
+              `Sucesso! Status: ${response.status}. Resposta: ${text}`,
+              "success"
+            );
+          } else {
+            logMessage(
+              `Erro! Status: ${response.status}. Resposta: ${text}`,
+              "error"
+            );
+          }
+        } catch (error) {
+          logMessage(`Erro na requisição: ${error}`, "error");
+        }
+
+        limparCampos("substituirFile", "arquivoIdSubstituirFile");
+      }
+
+      async function downloadFile() {
+        const arquivoId = document.getElementById("arquivoIdDownload").value;
+        if (!arquivoId) {
+          logMessage(
+            "Erro: ID do arquivo é obrigatório para download.",
+            "error"
+          );
+          return;
+        }
+        logMessage(`Iniciando download do arquivo com ID '${arquivoId}'...`);
+        const headers = getHeaders();
+        if (!headers) return;
+        try {
+          const response = await fetch(
+            `${API_URL}/arquivos/download/arquivo/${arquivoId}`,
+            { headers }
+          );
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          const blob = await response.blob();
+          const contentDisposition = response.headers.get(
+            "Content-Disposition"
+          );
+          if (!contentDisposition) {
+            throw new Error(
+              "Cabeçalho Content-Disposition ausente na resposta do servidor."
+            );
+          }
+          const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
+          const filename =
+            filenameMatch && filenameMatch[1]
+              ? filenameMatch[1]
+              : `arquivo_${arquivoId}`;
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          logMessage(
+            `Sucesso! Download iniciado para o arquivo '${filename}'.`,
+            "success"
+          );
+        } catch (error) {
+          logMessage(`Erro no download: ${error.message}`, "error");
+        }
+        limparCampos("arquivoIdDownload");
+      }
+
+      async function downloadPasta() {
+        const pastaId = document.getElementById("pastaIdDownload").value;
+        if (!pastaId) {
+          logMessage("Erro: ID da pasta é obrigatório para download.", "error");
+          return;
+        }
+        logMessage(`Iniciando download da pasta com ID '${pastaId}'...`);
+        const headers = getHeaders();
+        if (!headers) return;
+        try {
+          const response = await fetch(
+            `${API_URL}/arquivos/download/pasta/${pastaId}`,
+            { headers }
+          );
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          const blob = await response.blob();
+          const contentDisposition = response.headers.get(
+            "Content-Disposition"
+          );
+          if (!contentDisposition) {
+            throw new Error(
+              "Cabeçalho Content-Disposition ausente na resposta do servidor."
+            );
+          }
+          const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
+          const filename =
+            filenameMatch && filenameMatch[1]
+              ? filenameMatch[1]
+              : `pasta_${pastaId}.zip`;
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          logMessage(
+            `Sucesso! Download iniciado para a pasta '${filename}'.`,
+            "success"
+          );
+        } catch (error) {
+          logMessage(`Erro no download: ${error.message}`, "error");
+        }
+        limparCampos("pastaIdDownload");
+      }
+
+      async function renomearArquivo() {
+        const arquivoId = document.getElementById("arquivoIdRenomear").value;
+        const novoNome = document.getElementById("novoNomeArquivo").value;
+        if (!arquivoId || !novoNome) {
+          logMessage(
+            "Erro: ID do arquivo e novo nome são obrigatórios.",
+            "error"
+          );
+          return;
+        }
+        logMessage(
+          `Tentando renomear arquivo '${arquivoId}' para '${novoNome}'...`
+        );
+        const requestBody = { novoNome };
+        await enviarRequisicao(
+          `${API_URL}/arquivos/renomear/${arquivoId}`,
+          "PUT",
+          JSON.stringify(requestBody)
+        );
+        limparCampos("arquivoIdRenomear", "novoNomeArquivo");
+      }
+
+      async function renomearPasta() {
+        const pastaId = document.getElementById("pastaIdRenomear").value;
+        const novoNome = document.getElementById("novoNomePasta").value;
+        if (!pastaId || !novoNome) {
+          logMessage(
+            "Erro: ID da pasta e novo nome são obrigatórios.",
+            "error"
+          );
+          return;
+        }
+        logMessage(
+          `Tentando renomear pasta '${pastaId}' para '${novoNome}'...`
+        );
+        const requestBody = { novoNome };
+        await enviarRequisicao(
+          `${API_URL}/pastas/${pastaId}/renomear`,
+          "PATCH",
+          JSON.stringify(requestBody)
+        );
+        limparCampos("pastaIdRenomear", "novoNomePasta");
+      }
+
+      async function moverArquivo() {
+        const arquivoId = document.getElementById("arquivoIdMover").value;
+        const pastaDestinoId = document.getElementById(
+          "destinoPastaIdMoverArquivo"
+        ).value;
+        if (!arquivoId || !pastaDestinoId) {
+          logMessage(
+            "Erro: ID do arquivo e ID da pasta destino são obrigatórios.",
+            "error"
+          );
+          return;
+        }
+        logMessage(
+          `Tentando mover arquivo '${arquivoId}' para pasta '${pastaDestinoId}'...`
+        );
+        await enviarRequisicao(
+          `${API_URL}/arquivos/${arquivoId}/mover/${pastaDestinoId}`,
+          "PUT"
+        );
+        limparCampos("arquivoIdMover", "destinoPastaIdMoverArquivo");
+      }
+
+      async function moverPasta() {
+        const pastaId = document.getElementById("pastaIdMover").value;
+        const novaPastaPaiId = document.getElementById(
+          "novaPastaPaiIdMover"
+        ).value;
+        if (!pastaId) {
+          logMessage("Erro: ID da pasta é obrigatório.", "error");
+          return;
+        }
+        const params = novaPastaPaiId
+          ? `?novaPastaPaiId=${novaPastaPaiId}`
+          : "";
+        logMessage(
+          `Tentando mover pasta '${pastaId}' para a pasta pai '${
+            novaPastaPaiId || "raiz"
+          }'...`
+        );
+        await enviarRequisicao(
+          `${API_URL}/pastas/${pastaId}/mover${params}`,
+          "PATCH"
+        );
+        limparCampos("pastaIdMover", "novaPastaPaiIdMover");
+      }
+
+      async function excluirArquivo() {
+        const arquivoId = document.getElementById("arquivoIdExcluir").value;
+        if (!arquivoId) {
+          logMessage("Erro: ID do arquivo é obrigatório.", "error");
+          return;
+        }
+        if (
+          !confirm(
+            `Tem certeza que deseja excluir o arquivo com ID ${arquivoId}?`
+          )
+        )
+          return;
+        logMessage(`Tentando excluir arquivo '${arquivoId}'...`);
+        await enviarRequisicao(`${API_URL}/arquivos/${arquivoId}`, "DELETE");
+        limparCampos("arquivoIdExcluir");
+      }
+
+      async function excluirPasta() {
+        const pastaId = document.getElementById("pastaIdExcluir").value;
+        if (!pastaId) {
+          logMessage("Erro: ID da pasta é obrigatório.", "error");
+          return;
+        }
+        if (
+          !confirm(`Tem certeza que deseja excluir a pasta com ID ${pastaId}?`)
+        )
+          return;
+        logMessage(`Tentando excluir pasta '${pastaId}'...`);
+        await enviarRequisicao(`${API_URL}/pastas/${pastaId}`, "DELETE");
+        limparCampos("pastaIdExcluir");
+      }
+
+      async function excluirPastasEmLote() {
+        const idsString = document.getElementById("idsExcluirLote").value;
+        if (!idsString) {
+          logMessage(
+            "Erro: Insira os IDs das pastas para exclusão em lote.",
+            "error"
+          );
+          return;
+        }
+        const ids = idsString.split(",").map((id) => Number(id.trim()));
+        const payload = {
+          idsPastas: ids,
+          excluirConteudo: true,
+        };
+        logMessage(`Tentando excluir as pastas com IDs: ${ids.join(", ")}...`);
+        await enviarRequisicao(
+          `${API_URL}/pastas/excluir-lote`,
+          "DELETE",
+          JSON.stringify(payload)
+        );
+        limparCampos("idsExcluirLote");
+      }
+
+      async function excluirArquivosEmLote() {
+        const pastaId = document.getElementById(
+          "pastaIdExcluirArquivosEmLote"
+        ).value;
+        const idsString = document.getElementById(
+          "arquivosIdsExcluirLote"
+        ).value;
+
+        if (!pastaId) {
+          logMessage("Erro: O ID da pasta é obrigatório.", "error");
+          return;
+        }
+
+        const arquivoIds = idsString
+          ? idsString.split(",").map((id) => Number(id.trim()))
+          : null;
+        const confirmMessage = arquivoIds
+          ? `Tem certeza que deseja excluir os arquivos com IDs: ${arquivoIds.join(
+              ", "
+            )} da pasta ${pastaId}?`
+          : `Tem certeza que deseja excluir TODOS os arquivos da pasta ${pastaId}?`;
+
+        if (!confirm(confirmMessage)) {
+          return;
+        }
+
+        logMessage(`Tentando excluir arquivos da pasta '${pastaId}'...`);
+        await enviarRequisicao(
+          `${API_URL}/arquivos/pasta/${pastaId}/excluir`,
+          "DELETE",
+          JSON.stringify(arquivoIds)
+        );
+
+        limparCampos("pastaIdExcluirArquivosEmLote", "arquivosIdsExcluirLote");
+      }
+
+      async function copiarArquivo() {
+        const arquivoId = document.getElementById("arquivoIdCopiar").value;
+        const pastaDestinoId = document.getElementById(
+          "pastaDestinoIdCopiarArquivo"
+        ).value;
+        if (!arquivoId || !pastaDestinoId) {
+          logMessage(
+            "Erro: ID do arquivo e ID da pasta destino são obrigatórios.",
+            "error"
+          );
+          return;
+        }
+        logMessage(
+          `Tentando copiar arquivo '${arquivoId}' para pasta '${pastaDestinoId}'...`
+        );
+        await enviarRequisicao(
+          `${API_URL}/arquivos/${arquivoId}/copiar/${pastaDestinoId}`,
+          "POST"
+        );
+        limparCampos("arquivoIdCopiar", "pastaDestinoIdCopiarArquivo");
+      }
+
+      async function copiarPasta() {
+        const pastaId = document.getElementById("pastaIdCopiar").value;
+        const destinoPastaId = document.getElementById(
+          "destinoPastaIdCopiarPasta"
+        ).value;
+        if (!pastaId || !destinoPastaId) {
+          logMessage(
+            "Erro: ID da pasta e ID da pasta destino são obrigatórios.",
+            "error"
+          );
+          return;
+        }
+        logMessage(
+          `Tentando copiar pasta '${pastaId}' para pasta '${destinoPastaId}'...`
+        );
+        await enviarRequisicao(
+          `${API_URL}/pastas/${pastaId}/copiar?destinoPastaId=${destinoPastaId}`,
+          "POST"
+        );
+        limparCampos("pastaIdCopiar", "destinoPastaIdCopiarPasta");
+      }
+    </script>
+  </body>
+</html>

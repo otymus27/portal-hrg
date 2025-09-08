@@ -1,0 +1,105 @@
+<div class="container-fluid py-4">
+  <h2 class="mb-4">Dashboard</h2>
+
+  <div class="row">
+    <div class="col-lg-3 col-md-6 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div
+          class="card-body d-flex align-items-center justify-content-between"
+        >
+          <div>
+            <h5 class="card-title fw-bold text-muted">Total de Carros</h5>
+            <h2 class="mb-0">{{ dashboardMetrics?.totalCarros }}</h2>
+          </div>
+          <i class="bi bi-car-front display-4 text-primary"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4" *ngIf="isAdmin()">
+      <div class="card shadow-sm border-0 h-100">
+        <div
+          class="card-body d-flex align-items-center justify-content-between"
+        >
+          <div>
+            <h5 class="card-title fw-bold text-muted">Total de Usuários</h5>
+            <h2 class="mb-0">{{ dashboardMetrics?.totalUsuarios }}</h2>
+          </div>
+          <i class="bi bi-person-fill display-4 text-warning"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div
+          class="card-body d-flex align-items-center justify-content-between"
+        >
+          <div>
+            <h5 class="card-title fw-bold text-muted">
+              Total de Proprietários
+            </h5>
+            <h2 class="mb-0">{{ dashboardMetrics?.totalProprietarios }}</h2>
+          </div>
+          <i class="bi bi-person-badge display-4 text-info"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div
+          class="card-body d-flex align-items-center justify-content-between"
+        >
+          <div>
+            <h5 class="card-title fw-bold text-muted">Total de Marcas</h5>
+            <h2 class="mb-0">{{ dashboardMetrics?.totalMarcas }}</h2>
+          </div>
+          <i class="bi bi-bookmark-fill display-4 text-danger"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title fw-bold">Carros Cadastrados por Marca</h5>
+          <div class="text-center p-5 text-muted">
+            <p>Espaço para gráfico.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title fw-bold">Ações Rápidas</h5>
+          <div class="list-group list-group-flush">
+            <a
+              routerLink="/admin/carros/gerenciar"
+              class="list-group-item list-group-item-action"
+            >
+              <i class="bi bi-plus-circle-fill me-2"></i> Adicionar Novo Carro
+            </a>
+            <a
+              routerLink="/admin/usuarios/gerenciar"
+              class="list-group-item list-group-item-action"
+              *ngIf="isAdmin()"
+            >
+              <i class="bi bi-person-plus-fill me-2"></i> Adicionar Novo Usuário
+            </a>
+            <a
+              routerLink="/admin/proprietarios/gerenciar"
+              class="list-group-item list-group-item-action"
+            >
+              <i class="bi bi-person-plus-fill me-2"></i> Adicionar Proprietário
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

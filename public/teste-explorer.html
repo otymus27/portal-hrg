@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorer de Arquivos Públicos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #4a4a4a;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .controls h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .controls button {
+            padding: 8px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #0056b3;
+        }
+        #path-display {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .item-list {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .list-item:hover {
+            background-color: #f9f9f9;
+        }
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        .list-item .icon {
+            margin-right: 15px;
+            font-size: 1.5em;
+            color: #777;
+        }
+        .list-item .item-info {
+            flex-grow: 1;
+        }
+        .list-item .item-name {
+            font-weight: bold;
+            color: #444;
+        }
+        .list-item .item-details {
+            font-size: 0.8em;
+            color: #888;
+        }
+        .download-btn {
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background-color: #0056b3;
+        }
+        .visualize-btn {
+            padding: 5px 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .visualize-btn:hover {
+            background-color: #218838;
+        }
+        #loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        /* Estilos do Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            text-align: center;
+        }
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-btn:hover {
+            color: #333;
+        }
+        .modal-body h3 {
+            margin-top: 0;
+            font-size: 1.8em;
+            color: #4a4a4a;
+        }
+        .modal-body p {
+            font-size: 1.1em;
+            color: #666;
+        }
+        .modal-buttons {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .modal-buttons button:active {
+            transform: scale(0.98);
+        }
+        #confirm-download-btn {
+            background-color: #007BFF;
+            color: white;
+        }
+        #confirm-download-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Explorer de Arquivos Públicos</h1>
+
+        <div class="controls">
+            <h2>Navegação</h2>
+            <button id="back-button" onclick="goBack()" style="display: none;">Voltar</button>
+        </div>
+        
+        <div id="path-display">Caminho Atual: /</div>
+
+        <div id="loading">Carregando pastas...</div>
+
+        <div id="item-list" class="item-list">
+            </div>
+    </div>
+    
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div class="modal-body">
+                <h3 id="modal-filename"></h3>
+                <p>Tem certeza que deseja baixar este arquivo?</p>
+                <div class="modal-buttons">
+                    <button id="cancel-download-btn">Cancelar</button>
+                    <button id="confirm-download-btn">Baixar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8082/api/publico';
+        let currentPath = [];
+        let currentFolderId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFolderContent(null);
+        });
+
+        async function loadFolderContent(folderId) {
+            const listContainer = document.getElementById('item-list');
+            const loading = document.getElementById('loading');
+            const backButton = document.getElementById('back-button');
+
+            listContainer.innerHTML = '';
+            loading.style.display = 'block';
+
+            let folders = [];
+            let files = [];
+            let folderName = 'Raiz';
+
+            try {
+                if (folderId) {
+                    const filesResponse = await fetch(`${BASE_URL}/pastas/${folderId}/arquivos`);
+                    if (!filesResponse.ok) {
+                        throw new Error(`Pasta com ID ${folderId} não encontrada ou erro na requisição.`);
+                    }
+                    files = await filesResponse.json();
+
+                    const allFoldersResponse = await fetch(`${BASE_URL}/pastas`);
+                    const allFolders = await allFoldersResponse.json();
+                    folders = allFolders.filter(f => f.pastaPai && f.pastaPai.id === folderId);
+                    
+                    const currentFolderInfo = allFolders.find(f => f.id === folderId);
+                    if(currentFolderInfo) {
+                        folderName = currentFolderInfo.nome;
+                    }
+                } else {
+                    const rootFoldersResponse = await fetch(`${BASE_URL}/pastas`);
+                    folders = await rootFoldersResponse.json();
+                }
+
+                loading.style.display = 'none';
+
+                if (folders.length === 0 && files.length === 0) {
+                    listContainer.innerHTML = '<div style="text-align: center; padding: 20px;">Nenhum item encontrado nesta pasta.</div>';
+                }
+
+                folders.forEach(folder => {
+                    const item = createFolderElement(folder);
+                    listContainer.appendChild(item);
+                });
+
+                files.forEach(file => {
+                    const item = createFileElement(file);
+                    listContainer.appendChild(item);
+                });
+
+                updatePathDisplay(folderId, folderName);
+                backButton.style.display = currentPath.length > 0 ? 'block' : 'none';
+
+            } catch (error) {
+                loading.textContent = `Erro ao carregar conteúdo: ${error.message}. Verifique se a API está no ar e a URL está correta.`;
+                console.error('Erro ao carregar conteúdo:', error);
+            }
+        }
+
+        function createFolderElement(folder) {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <span class="icon">&#128193;</span>
+                <div class="item-info">
+                    <div class="item-name">${folder.nome}</div>
+                </div>
+                <button class="download-btn" onclick="downloadZip(${folder.id})">Baixar ZIP</button>
+            `;
+            div.onclick = () => {
+                currentPath.push({id: currentFolderId, name: document.getElementById('path-display').textContent.split(': ')[1]});
+                currentFolderId = folder.id;
+                loadFolderContent(folder.id);
+            };
+            return div;
+        }
+
+        function createFileElement(file) {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <span class="icon">&#128196;</span>
+                <div class="item-info">
+                    <div class="item-name">${file.nome}</div>
+                    <div class="item-details">${(file.tamanho / 1024).toFixed(2)} KB | ${new Date(file.dataUpload).toLocaleDateString()}</div>
+                </div>
+                <div class="file-actions">
+                    <button class="visualize-btn" onclick="event.stopPropagation(); visualizeFile(${file.id})">Visualizar</button>
+                    <button class="download-btn" onclick="event.stopPropagation(); showDownloadModal(${file.id}, '${file.nome}')">Baixar</button>
+                </div>
+            `;
+            return div;
+        }
+
+        function updatePathDisplay(folderId, folderName) {
+            const pathDisplay = document.getElementById('path-display');
+            let pathText = currentPath.map(p => p.name).join(' / ');
+            pathText += (pathText ? ' / ' : '') + folderName;
+            pathDisplay.textContent = 'Caminho Atual: ' + pathText;
+        }
+
+        function goBack() {
+            if (currentPath.length > 0) {
+                const previousFolder = currentPath.pop();
+                currentFolderId = previousFolder.id;
+                loadFolderContent(previousFolder.id);
+            }
+        }
+        
+        // Função para visualizar em nova aba
+        function visualizeFile(id) {
+            window.open(`${BASE_URL}/visualizar/arquivo/${id}`, '_blank');
+        }
+
+        // Função para iniciar o download
+        function downloadFile(id) {
+            window.location.href = `${BASE_URL}/download/arquivo/${id}`;
+        }
+
+        function downloadZip(id) {
+            window.location.href = `${BASE_URL}/download/pasta/${id}`;
+        }
+        
+        // --- Funções do Modal ---
+        const downloadModal = document.getElementById("downloadModal");
+        const closeModalBtn = document.getElementsByClassName("close-btn")[0];
+        const cancelDownloadBtn = document.getElementById("cancel-download-btn");
+        const confirmDownloadBtn = document.getElementById("confirm-download-btn");
+        const modalFilename = document.getElementById("modal-filename");
+
+        closeModalBtn.onclick = function() {
+            downloadModal.style.display = "none";
+        }
+
+        cancelDownloadBtn.onclick = function() {
+            downloadModal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == downloadModal) {
+                downloadModal.style.display = "none";
+            }
+        }
+
+        function showDownloadModal(fileId, fileName) {
+            modalFilename.textContent = fileName;
+            downloadModal.style.display = "flex";
+            
+            confirmDownloadBtn.onclick = () => {
+                downloadFile(fileId);
+                downloadModal.style.display = 'none';
+            };
+        }
+
+    </script>
+</body>
+</html>

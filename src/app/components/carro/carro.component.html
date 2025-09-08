@@ -1,0 +1,390 @@
+<br />
+
+<div class="container">
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3">
+        <h1>Gerenciamento de Carros</h1>
+        <button class="btn btn-primary btn-rounded btn-shadow me-2" (click)="cadastrarModal()">
+          <i class="bi bi-plus-circle me-1"></i> Novo
+        </button>
+      </div>
+
+      <!-- Barra de pesquisa e filtros -->
+      <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+        <div class="d-flex flex-grow-1 me-2 gap-2">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Filtrar por modelo"
+            [(ngModel)]="filtroModelo"
+            (keyup.enter)="aplicarFiltros()"
+          />
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Filtrar por marca"
+            [(ngModel)]="filtroMarca"
+            (keyup.enter)="aplicarFiltros()"
+          />
+          <input
+            type="number"
+            class="form-control"
+            placeholder="Filtrar por ano"
+            [(ngModel)]="filtroAno"
+            (keyup.enter)="aplicarFiltros()"
+          />
+        </div>
+
+        <button class="btn btn-primary ms-2" (click)="aplicarFiltros()">
+          <i class="bi bi-search"></i> Pesquisar
+        </button>
+        <button class="btn btn-secondary ms-2" (click)="limparFiltros()">
+          Limpar
+        </button>
+      </div>
+
+      <!-- Tabela  -->
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th (click)="ordenarPor('modelo')" style="cursor: pointer">
+              Modelo
+              <i
+                *ngIf="colunaOrdenada === 'modelo'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+            <th (click)="ordenarPor('marca')" style="cursor: pointer">
+              Marca
+              <i
+                *ngIf="colunaOrdenada === 'marca'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+            <th (click)="ordenarPor('cor')" style="cursor: pointer">
+              Cor
+              <i
+                *ngIf="colunaOrdenada === 'cor'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+            <th (click)="ordenarPor('ano')" style="cursor: pointer">
+              Ano
+              <i
+                *ngIf="colunaOrdenada === 'ano'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+            <th>Proprietários</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (carro of lista; track carro.id) {
+          <tr>
+            <td>{{ carro.modelo }}</td>
+            <td>{{ carro.marca.nome }}</td>
+            <td>{{ carro.cor }}</td>
+            <td>{{ carro.ano }}</td>
+            <td>
+              @for (p of carro.proprietarios; track p.id) {
+              {{ p.nome }}<span *ngIf="!$last">, </span>
+              }
+            </td>
+            <td>
+              <button
+                class="btn btn-warning btn-sm btn-shadow me-1"
+                (click)="editarModal(carro)"
+                title="Editar"
+              >
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button
+                class="btn btn-danger btn-sm btn-shadow"
+                (click)="excluir(carro)"
+                title="Excluir"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Paginação estilizada com contador na mesma linha -->
+      <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap bg-light text-black p-3 rounded">
+        <div class="me-3">
+          <small>
+            Exibindo página <strong>{{ page + 1 }}</strong> de
+            <strong>{{ totalPages }}</strong> — Total de registros:
+            <strong>{{ totalElements }}</strong>
+          </small>
+        </div>
+      
+        <!-- Aqui temos a paginação -->
+        <nav>
+          <ul class="pagination mb-0">
+            <li class="page-item" [class.disabled]="page === 0">
+              <button
+                class="page-link"
+                (click)="paginaAnterior()"
+                [disabled]="page === 0"
+              >
+                ‹ Anterior
+              </button>
+            </li>
+      
+            <li
+              *ngFor="let p of [].constructor(totalPages); let i = index"
+              class="page-item"
+              [class.active]="i === page"
+            >
+              <button class="page-link" (click)="irParaPagina(i)">
+                {{ i + 1 }}
+              </button>
+            </li>
+      
+            <li class="page-item" [class.disabled]="page + 1 >= totalPages">
+              <button
+                class="page-link"
+                (click)="proximaPagina()"
+                [disabled]="page + 1 >= totalPages"
+              >
+                Próxima ›
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Aqui temos os modais de cadastro e edição -->
+<ng-template #modalCarroDetalhe>
+  <div class="modal-header bg-primary">
+    <h5 class="modal-title fw-bold">
+      {{ registroSelecionado.id > 0 ? "Editar Carro" : "Novo Carro" }}
+    </h5>
+    <button type="button" class="btn-close" (click)="cancelarModal()"></button>
+  </div>
+
+  <div class="modal-body d-flex justify-content-center">
+    <form #carroForm="ngForm" (ngSubmit)="salvarCarro(registroSelecionado)">
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 100px">Marca:</label>
+        <select
+          mdbInput
+          class="form-select"
+          [(ngModel)]="registroSelecionado.marca"
+          #marca="ngModel"
+          name="marca"
+          required
+          class="form-control flex-grow-1"
+        >
+          <option [ngValue]="null" disabled selected>Selecione uma marca</option>
+          @for (m of marcas; track m.id) {
+          <option [ngValue]="m">{{ m.nome }}</option>
+          }
+        </select>
+      </div>
+      <div
+        *ngIf="marca.invalid && (marca.dirty || marca.touched)"
+        class="text-danger text-center"
+      >
+        O campo Marca é obrigatório.
+      </div>
+
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 100px">Modelo:</label>
+        <input
+          mdbInput
+          [(ngModel)]="registroSelecionado.modelo"
+          #modelo="ngModel"
+          name="modelo"
+          required
+          class="form-control flex-grow-1"
+        />
+      </div>
+      <div
+        *ngIf="modelo.invalid && (modelo.dirty || modelo.touched)"
+        class="text-danger text-center"
+      >
+        O campo Modelo é obrigatório.
+      </div>
+
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 100px">Cor:</label>
+        <input
+          mdbInput
+          [(ngModel)]="registroSelecionado.cor"
+          #cor="ngModel"
+          name="cor"
+          required
+          class="form-control flex-grow-1"
+        />
+      </div>
+      <div
+        *ngIf="cor.invalid && (cor.dirty || cor.touched)"
+        class="text-danger text-center"
+      >
+        O campo Cor é obrigatório.
+      </div>
+
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 100px">Ano:</label>
+        <input
+          mdbInput
+          type="number"
+          [(ngModel)]="registroSelecionado.ano"
+          #ano="ngModel"
+          name="ano"
+          required
+          class="form-control flex-grow-1"
+        />
+      </div>
+      <div
+        *ngIf="ano.invalid && (ano.dirty || ano.touched)"
+        class="text-danger text-center"
+      >
+        O campo Ano é obrigatório.
+      </div>
+
+      <div class="mt-3">
+        <label><strong>Proprietarios(s):</strong></label>
+        <ul class="list-group mb-2">
+          @for (p of registroSelecionado.proprietarios; track p.id) {
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            {{ p.nome }} - {{ p.cpf }}
+            <button
+              type="button"
+              class="btn btn-sm btn-danger"
+              (click)="removerProprietario(p)"
+            >
+              ❌
+            </button>
+          </li>
+          }
+        </ul>
+        <button
+          type="button"
+          class="btn btn-outline-success btn-sm"
+          (click)="abrirModalProprietarios()"
+        >
+          ➕ Adicionar Proprietário
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer d-flex justify-content-center bg-dark">
+    <div class="d-flex justify-content-end mt-3 gap-2">
+      <button
+        class="btn btn-primary me-2"
+        [disabled]="carroForm.invalid"
+        (click)="salvarCarro(registroSelecionado)"
+      >
+        Salvar
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cancelarModal()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #modalConfirmacaoExclusao>
+  <div class="modal-header bg-danger text-white">
+    <h5 class="modal-title fw-bold">Confirmação de Exclusão</h5>
+    <button type="button" class="btn-close" (click)="cancelarModal()"></button>
+  </div>
+
+  <div class="modal-body">
+    <p>
+      Tem certeza que deseja excluir o carro
+      <strong>{{ registroSelecionado?.modelo }}</strong>?
+    </p>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="cancelarModal()">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn-danger" (click)="excluirConfirmado()">
+      Excluir
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #modalProprietarios>
+  <div class="modal-header">
+    <h5 class="modal-title">Selecionar Proprietários</h5>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="fecharModalProprietarios()"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <ul class="list-group">
+      @for (p of proprietariosDisponiveis; track p.id) {
+      <li
+        class="list-group-item d-flex justify-content-between align-items-center"
+      >
+        {{ p.nome }} - {{ p.cpf }}
+        <button
+          type="button"
+          class="btn btn-sm btn-success"
+          (click)="adicionarProprietario(p)"
+        >
+          ➕
+        </button>
+      </li>
+      }
+    </ul>
+  </div>
+</ng-template>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  @for (toast of toastService.messages$ | async; track toast) {
+    <div 
+      class="toast show" 
+      [ngClass]="{
+        'bg-success': toast.type === 'success',
+        'bg-danger': toast.type === 'danger',
+        'bg-info': toast.type === 'info'
+      }" 
+      role="alert" 
+      aria-live="assertive" 
+      aria-atomic="true">
+      <div class="toast-header border-0 bg-transparent text-white">
+        <strong class="me-auto text-capitalize">{{ toast.type }}</strong>
+      </div>
+      <div class="toast-body text-white">
+        {{ toast.message }}
+      </div>
+    </div>
+  }
+</div>

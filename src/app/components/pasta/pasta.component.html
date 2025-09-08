@@ -1,0 +1,61 @@
+<main class="container">
+    
+  <nav class="breadcrumbs">
+      <span class="path-item"><a (click)="goToRoot()">Raiz</a></span>
+      <ng-container *ngFor="let breadcrumb of breadcrumbs">
+          <span class="path-item" *ngIf="breadcrumb.name"> > </span>
+          <span class="path-item" *ngIf="breadcrumb.name">
+              <!-- <a (click)="goToFolder(breadcrumb.id)">{{ breadcrumb.name }}</a> -->
+          </span>
+      </ng-container>
+  </nav>
+
+  <div class="toolbar">
+      <button class="btn" (click)="onUpload()"><i class="fas fa-upload"></i> Fazer Upload</button>
+      <button class="btn" (click)="onCreateFolder()"><i class="fas fa-folder-plus"></i> Nova Pasta</button>
+      <button class="btn" [disabled]="!hasSelection" (click)="onDownload()"><i class="fas fa-download"></i> Download</button>
+      <button class="btn" [disabled]="!isSingleSelection" (click)="onRename()"><i class="fas fa-edit"></i> Renomear</button>
+      <button class="btn" [disabled]="!hasSelection" (click)="onCopy()"><i class="fas fa-copy"></i> Copiar</button>
+      <button class="btn" [disabled]="!hasSelection" (click)="onDelete()"><i class="fas fa-trash-alt"></i> Excluir</button>
+  </div>
+
+  <div class="table-container">
+      <table class="file-table">
+          <thead>
+              <tr>
+                  <th>
+                      <input type="checkbox" (change)="toggleAllSelection($event)">
+                  </th>
+                  <th>Nome</th>
+                  <th>Tamanho</th>
+                  <th>Data de Modificação</th>
+                  <th class="actions-col">Ações</th>
+              </tr>
+          </thead>
+          <tbody>
+              <tr *ngFor="let item of currentItems"
+                  (dblclick)="onItemDoubleClick(item)"
+                  [ngClass]="{'selected-row': item.isSelected}">
+                  <td>
+                      <input type="checkbox" [(ngModel)]="item.isSelected" (change)="checkSelection()">
+                  </td>
+                  <td>
+                      <i class="fas" [ngClass]="{'fa-folder folder-icon': item.isFolder, 'fa-file file-icon': !item.isFolder}"></i>
+                      <span class="item-name">{{ item.name }}</span>
+                  </td>
+                  <td>{{ item.size }}</td>
+                  <td>{{ item.modifiedDate | date:'short' }}</td>
+                  <td class="actions-col">
+                      <button class="action-btn" (click)="onRename(item)"><i class="fas fa-edit"></i></button>
+                      <button class="action-btn" (click)="onCopy(item)"><i class="fas fa-copy"></i></button>
+                      <button class="action-btn" (click)="onDelete(item)"><i class="fas fa-trash-alt"></i></button>
+                  </td>
+              </tr>
+          </tbody>
+      </table>
+
+      <div *ngIf="currentItems.length === 0" class="empty-folder-message">
+          Esta pasta está vazia.
+      </div>
+  </div>
+</main>

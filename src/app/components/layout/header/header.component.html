@@ -1,0 +1,28 @@
+<header
+  class="bg-primary text-white py-3 d-flex align-items-center justify-content-between"
+>
+  <button class="btn btn-outline-light d-md-none" (click)="toggleSidebar()">
+    <i class="bi bi-list"></i>
+  </button>
+
+  <div class="d-flex align-items-center ms-3">
+    <img src="/img_transformers.png" alt="Logo da Empresa" class="logo me-3" />
+    <h3 class="mb-0 d-none d-md-block">Gestão de Carros</h3>
+  </div>
+
+  <!-- ✅ Exibe o nome do usuário logado -->
+  <div
+    *ngIf="authService.isLoggedIn$ | async"
+    class="user-info me-3 d-flex align-items-end"
+  >
+    <span class="fw-bold">Bem-vindo, {{ loggedInUsername$ | async }}</span>
+  </div>
+
+  <ul class="nav">
+    <li class="nav-item">
+      <button class="btn btn-danger btn-sm btn-rounded" (click)="logout()">
+        Logout
+      </button>
+    </li>
+  </ul>
+</header>

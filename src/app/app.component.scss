@@ -1,0 +1,23 @@
+.app-container {
+  display: flex;
+  min-height: calc(100vh - 60px);
+  align-content: center;
+  padding-top: 60px;
+}
+
+main {
+  flex: 1;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+  padding-bottom: 200px;
+}
+
+.app-container.active main {
+  margin-left: 60px;
+}
+
+@media (max-width: 768px) {
+  main {
+    margin-left: 0;
+  }
+}

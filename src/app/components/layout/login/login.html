@@ -1,0 +1,85 @@
+<div class="login-page">
+  <div class="background-overlay"></div>
+  <div class="login-content">
+    <div class="login-card-dark shadow-lg">
+      <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-5">
+          <h2 class="fw-bold text-white mb-2">Login</h2>
+          <p class="text-muted-light">
+            Entre com suas credenciais para acessar
+          </p>
+        </div>
+
+        <form (ngSubmit)="onSubmit()">
+          <div class="form-outline mb-4">
+            <input
+              type="text"
+              id="usuario"
+              class="form-control form-control-lg text-white"
+              [(ngModel)]="credentials.username"
+              name="username"
+              required
+            />
+            <label class="form-label text-muted-light" for="usuario"
+              >Usuário</label
+            >
+          </div>
+          <div *ngIf="usernameError" class="text-danger small mt-1 mb-3">
+            {{ usernameError }}
+          </div>
+
+          <div class="form-outline mb-4">
+            <input
+              type="password"
+              id="senha"
+              class="form-control form-control-lg text-white"
+              [(ngModel)]="credentials.password"
+              name="password"
+              required
+            />
+            <label class="form-label text-muted-light" for="senha">Senha</label>
+          </div>
+          <div *ngIf="passwordError" class="text-danger small mt-1 mb-3">
+            {{ passwordError }}
+          </div>
+
+          <div
+            *ngIf="errorMessage"
+            class="alert alert-danger text-center mb-4"
+            role="alert"
+          >
+            {{ errorMessage }}
+          </div>
+
+          <div class="d-grid gap-2 mb-3">
+            <button
+              type="submit"
+              class="btn btn-primary btn-lg"
+              [disabled]="loading"
+              mdbRipple
+            >
+              <span
+                *ngIf="loading"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              {{ loading ? 'Entrando...' : 'Entrar' }}
+            </button>
+          </div>
+
+          <div class="text-center">
+            <a href="#" class="text-white-50 small">Esqueceu sua senha?</a>
+          </div>
+
+          <div class="d-grid gap-2 mt-4">
+            <a routerLink="/" class="btn btn-outline-light btn-lg" mdbRipple>
+              <i class="fa fa-home me-2"></i>
+              Voltar para a página inicial
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
