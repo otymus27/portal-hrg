@@ -48,7 +48,7 @@ public class PublicController {
         return ResponseEntity.ok(publicService.listarPastasPublicas(pageable));
     }
 
-    // RF-002: Visualização de Arquivos
+    // RF-002: Listagem de Arquivos por id
     @GetMapping("/pastas/{id}/arquivos")
     public ResponseEntity<List<ArquivoPublicoDTO>> listarArquivosPublicos(@PathVariable Long id) {
         return ResponseEntity.ok(publicService.listarArquivosPublicos(id));

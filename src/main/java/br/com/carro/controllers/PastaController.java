@@ -65,6 +65,7 @@ public class PastaController {
         }
     }
 
+    //ENDPOINT 01 - Lista só as pastas principais ou raiz
     @GetMapping("/raiz")
     public ResponseEntity<List<PastaDTO>> listarPastasRaiz(Authentication authentication) throws AccessDeniedException {
         Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
@@ -85,6 +86,24 @@ public class PastaController {
             return ResponseEntity.ok(arvore);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Erro ao buscar árvore de pastas.");
+        }
+    }
+
+// ENDPOINT 02- Método para busca de pastas e arquivos por id
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
+    public ResponseEntity<PastaCompletaDTO> getPastaPorId(
+            @PathVariable Long id,
+            Authentication authentication,
+            @ModelAttribute PastaFilterDTO filtro) {
+        try {
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            PastaCompletaDTO pasta = pastaService.getPastaCompletaPorId(id, usuarioLogado, filtro);
+            return ResponseEntity.ok(pasta);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).build();
         }
     }
 

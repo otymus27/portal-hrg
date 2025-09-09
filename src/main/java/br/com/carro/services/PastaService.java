@@ -113,6 +113,20 @@ public class PastaService {
                 .collect(Collectors.toList());
     }
 
+    // ENDPOINT 02 - Método para busca de pastas e arquivos por id
+    @Transactional(readOnly = true)
+    public PastaCompletaDTO getPastaCompletaPorId(Long idPasta, Usuario usuarioLogado, PastaFilterDTO filtro) {
+        Pasta pasta = pastaRepository.findById(idPasta)
+                .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada."));
+
+        // Permissão: admin ou usuário listado
+        if (!usuarioLogado.isAdmin() && !pasta.getUsuariosComPermissao().contains(usuarioLogado)) {
+            throw new SecurityException("Você não tem permissão para acessar esta pasta.");
+        }
+
+        return mapRecursivo(pasta, usuarioLogado, filtro, 0);
+    }
+
     private PastaCompletaDTO mapRecursivo(Pasta pasta, Usuario usuarioLogado, PastaFilterDTO filtro, int nivelAtual) {
         // Limite de profundidade
         if (filtro.getProfundidadeMax() != null && nivelAtual >= filtro.getProfundidadeMax()) {
