@@ -13,6 +13,11 @@ import { ExplorerComponent } from './features/public/pages/explorer/explorer.com
 
 export const routes: Routes = [
   // A rota principal para a página inicial
+
+   { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: 'home', component: HomeComponentPublico },
+
+
   { path: '', redirectTo: 'publico', pathMatch: 'full' },
   { path: 'publico', component: ExplorerComponent },
 
@@ -22,8 +27,7 @@ export const routes: Routes = [
   { path: '**', redirectTo: 'publico' },
 
 
-  { path: '', redirectTo: 'home', pathMatch: 'full' },
-  { path: 'home', component: HomeComponentPublico },
+ 
   // Rota para a lista de pastas de nível superior
 
   // Rota para navegação dentro das pastas (com ID)

@@ -1,11 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { PublicService, PastaPublica, ArquivoPublico } from '../../../../services/public.service';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { HeaderComponent } from "../../../../components/layout-admin/header/header.component";
+import { FooterComponent } from "../../../../components/layout-admin/footer/footer.component";
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-explorer',
   standalone: true, // Adicionado para componentes autônomos
-  imports: [CommonModule, DecimalPipe],
+  imports: [CommonModule, DecimalPipe, HeaderComponent, FooterComponent],
   templateUrl: './explorer.component.html',
   styleUrls: ['./explorer.component.scss'],
 })
@@ -19,7 +22,7 @@ export class ExplorerComponent implements OnInit {
   // Modal
   arquivoSelecionado?: ArquivoPublico;
 
-  constructor(public publicService: PublicService) {}
+  constructor(public publicService: PublicService,private router: Router) {}
 
   ngOnInit(): void {
     this.carregarPastas();
@@ -60,6 +63,10 @@ export class ExplorerComponent implements OnInit {
     this.breadcrumb = this.breadcrumb.slice(0, index + 1);
     this.pastaAtual = this.breadcrumb[this.breadcrumb.length - 1];
     this.arquivos = this.pastaAtual.arquivos ?? [];
+  }
+
+  navegarParaHome(): void {
+    this.router.navigate(['/home']);
   }
 
   abrirArquivo(arquivo: ArquivoPublico) {
