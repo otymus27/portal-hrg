@@ -16,8 +16,8 @@ export interface DashboardMetrics {
 })
 export class DashboardService {
   private http = inject(HttpClient);
-  // ✅ Ajuste para a URL real do seu backend 
-  private readonly API_URL = environment.apiUrl+'/api/dashboard/metrics';
+  // ✅ Ajuste para a URL real do seu backend
+  private readonly API_URL = environment.apiUrl + '/api/estatisticas';
 
   constructor() {}
 

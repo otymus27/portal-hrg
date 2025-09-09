@@ -121,31 +121,31 @@ visualizarArquivo(arquivo: ArquivoPublico): void {
 
 
   getIcon(arquivo: ArquivoPublico): string {
-  const extensao = arquivo.nome.split('.').pop()?.toLowerCase();
+    const extensao = arquivo.nome.split('.').pop()?.toLowerCase();
 
-  switch (extensao) {
-    case 'pdf':
-      return 'assets/icons/pdf.png';
-    case 'doc':
-    case 'docx':
-      return 'assets/icons/word.png';
-    case 'xls':
-    case 'xlsx':
-      return 'assets/icons/xls.png';
-    case 'ppt':
-    case 'pptx':
-      return 'assets/icons/ppt.png';
-    case 'txt':
-      return 'assets/icons/txt.png';
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'gif':
-      return 'assets/icons/image.png';
-    default:
-      return 'assets/icons/pdf.png'; // ícone genérico
+    switch (extensao) {
+      case 'pdf':
+        return 'assets/icons/pdf.png';
+      case 'doc':
+      case 'docx':
+        return 'assets/icons/word.png';
+      case 'xls':
+      case 'xlsx':
+        return 'assets/icons/xls.png';
+      case 'ppt':
+      case 'pptx':
+        return 'assets/icons/ppt.png';
+      case 'txt':
+        return 'assets/icons/txt.png';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return 'assets/icons/image.png';
+      default:
+        return 'assets/icons/pdf.png'; // ícone genérico
+    }
   }
-}
 
 
   voltar() {

@@ -1,0 +1,19 @@
+<h2>Gerenciar Pastas</h2>
+<button (click)="abrirModal()">+ Nova Pasta</button>
+
+<div class="lista">
+  <app-pasta-card *ngFor="let pasta of pastas"
+    [pasta]="pasta"
+    (abrir)="abrirPasta($event)"
+    (editar)="editarPasta($event)"
+    (excluir)="excluirPasta($event)">
+  </app-pasta-card>
+</div>
+
+<app-pasta-form-modal
+  *ngIf="modalAberto"
+  [pastaId]="pastaEditando?.id"
+  [nome]="pastaEditando?.nome || ''"
+  (salvarPasta)="salvarPasta($event)"
+  (fechar)="modalAberto=false">
+</app-pasta-form-modal>

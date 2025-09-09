@@ -1,51 +1,33 @@
+// src/app/app.routes.ts ou onde suas rotas estão definidas
 import { Routes } from '@angular/router';
 import { Login } from './components/layout-admin/login/login';
 import { Principal } from './components/layout-admin/principal/principal';
-
 import { AuthGuard } from './guards/auth.guard';
 import { UsuarioComponent } from './components/usuario/usuario.component';
-
 import { RedefinicaoSenhaComponent } from './components/redefinicao-senha/redefinicao-senha.component';
 import { HomeComponentPublico } from './components/layout-publico/home/home.component';
-
 import { HomeComponentAdmin } from './components/layout-admin/home/home.component';
 import { ExplorerComponent } from './features/public/pages/explorer/explorer.component';
 
-export const routes: Routes = [
-  // A rota principal para a página inicial
+// Importa o novo componente
+import { AdminExplorerComponent } from './features/admin/pages/admin-explorer/admin-explorer.component';
 
-   { path: '', redirectTo: 'home', pathMatch: 'full' },
+export const routes: Routes = [
+  // --- Rotas Públicas ---
+  // Rota raiz que redireciona para a página inicial pública
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: HomeComponentPublico },
 
-
-  { path: '', redirectTo: 'publico', pathMatch: 'full' },
+  // Rota de exploração pública de arquivos
   { path: 'publico', component: ExplorerComponent },
 
-  // Rotas futuras (admin, login etc.)
-  // { path: 'admin', loadComponent: () => import('./features/admin/pages/dashboard/dashboard.component').then(c => c.DashboardComponent) },
-
-  { path: '**', redirectTo: 'publico' },
-
-
- 
-  // Rota para a lista de pastas de nível superior
-
-  // Rota para navegação dentro das pastas (com ID)
-  //{ path: 'protocolos/:id', component: ProtocolosComponent },
-
-  // Rota para a área de gerenciamento autenticada
-  // { path: 'gerenciar-arquivos', component: FileManagementComponent }
-
-  // // Redireciona a rota base para a página de login
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-
-  // Rota para o componente de login
+  // Rota de login
   { path: 'login', component: Login },
 
-  // // ✅ Nova rota de nível superior para o usuário redefinir a senha
-  // { path: 'redefinir-senha', component: RedefinicaoSenhaComponent },
+  // Rota de redefinição de senha
+  { path: 'redefinir-senha', component: RedefinicaoSenhaComponent },
 
-  // Rota para o painel de administração (com sidebar, header, etc.)
+  // --- Rotas Administrativas (Protegidas) ---
   {
     path: 'admin',
     component: Principal,
@@ -61,9 +43,25 @@ export const routes: Routes = [
 
       // Rotas com submenus para Marcas
 
-      // Rotas com submenus para Marcas
+      // Rotas com submenus para Pastas
 
-      // Rotas com submenus para Marcas
+      {
+        path: 'pastas',
+        children: [
+          {
+            path: '',
+            component: AdminExplorerComponent,
+            data: { roles: ['ADMIN'] }, // ✅ Só admin pode acessar
+          },
+          {
+            path: 'gerenciar',
+            component: AdminExplorerComponent,
+            data: { roles: ['ADMIN'] }, // ✅ Só admin pode acessar
+          },
+        ],
+      },
+
+      // Rotas com submenus para usuarios
       {
         path: 'usuarios',
         children: [

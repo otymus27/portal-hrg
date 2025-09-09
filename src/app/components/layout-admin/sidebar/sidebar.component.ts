@@ -23,9 +23,13 @@ export class SidebarComponent {
   }
 
   toggleSubmenu(submenu: string) {
-    if (submenu === 'usuarios') {
+    if (submenu === 'pastas') {
       this.showPastasSubmenu = !this.showPastasSubmenu;
       this.showMarcasSubmenu = false;
+      this.showUsuariosSubmenu = false;
+    } else if (submenu === 'marcas') {
+      this.showMarcasSubmenu = !this.showMarcasSubmenu;
+      this.showPastasSubmenu = false;
       this.showUsuariosSubmenu = false;
     } else if (submenu === 'usuarios') {
       this.showUsuariosSubmenu = !this.showUsuariosSubmenu;
