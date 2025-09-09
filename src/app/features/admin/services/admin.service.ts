@@ -3,6 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+export interface Paginacao<T> {
+  content: T[];
+  number: number;
+  totalPages: number;
+  totalElements: number;
+}
+
 // Interfaces exclusivas para a área administrativa
 export interface PastaAdmin {
   id: string;
@@ -41,33 +48,41 @@ export class AdminService {
   listarConteudoRaiz(): Observable<ConteudoPasta> {
     // Lista apenas as pastas raiz, sem subpastas ou arquivos aninhados
     return this.http.get<PastaAdmin[]>(`${this.apiUrlPublica}/pastas`).pipe(
-      map(pastas => ({
+      map((pastas) => ({
         pastas,
-        arquivos: []
+        arquivos: [],
       }))
     );
   }
-  
+
   // Novo método para buscar pastas e arquivos por ID no backend
   listarConteudoPorId(pastaId: string): Observable<ConteudoPasta> {
     // Busca uma pasta específica e seu conteúdo aninhado por ID
-    return this.http.get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`).pipe(
-      map(pasta => ({
-        pastas: pasta.subPastas || [],
-        arquivos: pasta.arquivos || []
-      }))
-    );
+    return this.http
+      .get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`)
+      .pipe(
+        map((pasta) => ({
+          pastas: pasta.subPastas || [],
+          arquivos: pasta.arquivos || [],
+        }))
+      );
   }
 
   downloadArquivo(arquivoId: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrlPublica}/arquivos/${arquivoId}/download`, {
-      responseType: 'blob'
-    });
+    return this.http.get(
+      `${this.apiUrlPublica}/arquivos/${arquivoId}/download`,
+      {
+        responseType: 'blob',
+      }
+    );
   }
 
   // --- Métodos de Pasta (acesso privado) ---
-  criarPasta(nomePasta: string, pastaPaiId?: string): Observable<PastaAdmin> {
-    const body = { nomePasta, pastaPaiId };
+  criarPasta(body: {
+    nome: string;
+    pastaPaiId?: string;
+    usuariosComPermissaoIds: number[];
+  }) {
     return this.http.post<PastaAdmin>(this.apiUrlAdminPastas, body);
   }
 
@@ -76,7 +91,10 @@ export class AdminService {
   }
 
   renomearPasta(id: string, novoNome: string): Observable<PastaAdmin> {
-    return this.http.patch<PastaAdmin>(`${this.apiUrlAdminPastas}/${id}/renomear`, { novoNome });
+    return this.http.patch<PastaAdmin>(
+      `${this.apiUrlAdminPastas}/${id}/renomear`,
+      { novoNome }
+    );
   }
 
   // --- Métodos de Arquivo (acesso privado) ---
@@ -84,7 +102,10 @@ export class AdminService {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('pastaId', pastaId);
-    return this.http.post<ArquivoAdmin>(`${this.apiUrlAdminArquivos}/upload`, formData);
+    return this.http.post<ArquivoAdmin>(
+      `${this.apiUrlAdminArquivos}/upload`,
+      formData
+    );
   }
 
   excluirArquivo(id: string): Observable<void> {
@@ -92,6 +113,9 @@ export class AdminService {
   }
 
   renomearArquivo(id: string, novoNome: string): Observable<ArquivoAdmin> {
-    return this.http.put<ArquivoAdmin>(`${this.apiUrlAdminArquivos}/renomear/${id}`, { novoNome });
+    return this.http.put<ArquivoAdmin>(
+      `${this.apiUrlAdminArquivos}/renomear/${id}`,
+      { novoNome }
+    );
   }
 }

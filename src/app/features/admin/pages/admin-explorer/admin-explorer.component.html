@@ -1,156 +1,93 @@
-<div class="container">
-  <div class="card">
-    <div class="card-body">
-      <!-- Cabeçalho -->
-      <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded">
-        <h1>Gerenciamento de Pastas e Arquivos</h1>
-        <div>
-          <button class="btn btn-primary btn-rounded btn-shadow me-2" (click)="abrirModalCriarPasta()">
-            <i class="bi bi-folder-plus me-1"></i> Nova Pasta
-          </button>
-          <button class="btn btn-success btn-rounded btn-shadow" (click)="abrirModalUpload()">
-            <i class="bi bi-upload me-1"></i> Upload
-          </button>
+<div class="admin-explorer-container">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" *ngIf="breadcrumb.length > 0">
+    <span class="breadcrumb-item" (click)="navegarPara(-1)">Raiz</span>
+    <ng-container *ngFor="let pasta of breadcrumb; let i = index">
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-item" (click)="navegarPara(i)">{{ pasta.nome }}</span>
+    </ng-container>
+  </nav>
+
+  <!-- Loader -->
+  <div *ngIf="loading" class="loading">⏳ Carregando conteúdo...</div>
+
+  <!-- Lista de pastas -->
+  <div class="lista">
+    <div class="pasta" *ngFor="let pasta of pastas">
+      <div class="pasta-info" (dblclick)="abrirPasta(pasta)">
+        📁 {{ pasta.nome }}
+      </div>
+      <div class="acoes">
+        <button class="btn btn-small" (click)="abrirModalRenomear(pasta)">Renomear</button>
+        <button class="btn btn-small btn-danger" (click)="excluirPasta(pasta)">Excluir</button>
+        <button class="btn btn-small" (click)="abrirModalUpload()">Upload</button>
+      </div>
+    </div>
+
+    <!-- Lista de arquivos -->
+    <div class="arquivo" *ngFor="let arquivo of arquivos">
+      <div class="arquivo-info">
+        📄 {{ arquivo.nome }}
+      </div>
+      <div class="acoes">
+        <button class="btn btn-small" (click)="downloadArquivo(arquivo)">Download</button>
+        <button class="btn btn-small" (click)="abrirModalRenomear(arquivo)">Renomear</button>
+        <button class="btn btn-small btn-danger" (click)="excluirArquivo(arquivo)">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão Criar Pasta -->
+  <button class="btn btn-primary" (click)="abrirModalCriarPasta()">Nova Pasta</button>
+
+  <!-- Modal Criar Pasta -->
+  <div class="modal" *ngIf="modalCriarPastaAberto">
+    <div class="modal-content">
+      <h3>Criar Nova Pasta</h3>
+      <label>Nome da Pasta:</label>
+      <input type="text" [(ngModel)]="novoNomePasta" />
+      
+      <label>Selecionar Usuários com Permissão:</label>
+      <div class="usuarios-lista">
+        <div *ngFor="let u of usuarios">
+          <input type="checkbox" 
+                 [checked]="usuariosSelecionados.includes(u)" 
+                 (change)="selecionarUsuario(u)" />
+          {{ u.username }}
         </div>
       </div>
 
-      <!-- Breadcrumb -->
-      <nav class="breadcrumb mt-3 mb-3">
-        <a (click)="navegarPara(-1)" class="breadcrumb-item">Início</a>
-        <ng-container *ngFor="let pasta of breadcrumb; let i = index">
-          <span class="breadcrumb-separator">/</span>
-          <a (click)="navegarPara(i)" class="breadcrumb-item">{{ pasta.nome }}</a>
-        </ng-container>
-      </nav>
-
-      <!-- Tabela de Pastas e Arquivos -->
-      <table class="table table-striped mt-3">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Data de Modificação</th>
-            <th>Ação</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Pastas -->
-          <tr *ngFor="let pasta of pastas" (click)="abrirPasta(pasta)" style="cursor: pointer;">
-            <td><i class="bi bi-folder-fill me-2"></i>{{ pasta.nome }}</td>
-            <td>Pasta</td>
-            <td>---</td>
-            <td>
-              <button class="btn btn-warning btn-sm me-1" (click)="$event.stopPropagation(); abrirModalRenomear(pasta)">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-              <button class="btn btn-danger btn-sm" (click)="$event.stopPropagation(); excluirPasta(pasta)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
-
-          <!-- Arquivos -->
-          <tr *ngFor="let arquivo of arquivos">
-            <td><i class="bi bi-file-earmark-text-fill me-2"></i>{{ arquivo.nome }}</td>
-            <td>Arquivo</td>
-            <td>{{ arquivo.dataModificacao | date : "short" }}</td>
-            <td>
-              <a [href]="arquivo.url" class="btn btn-success btn-sm me-1" target="_blank">
-                <i class="bi bi-download"></i>
-              </a>
-              <button class="btn btn-warning btn-sm me-1" (click)="abrirModalRenomear(arquivo)">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-              <button class="btn btn-danger btn-sm" (click)="excluirArquivo(arquivo)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
-
-          <tr *ngIf="pastas.length === 0 && arquivos.length === 0 && !loading">
-            <td colspan="4" class="text-center">Esta pasta está vazia.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Paginação
-      <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap bg-light text-black p-3 rounded">
-        <div class="me-3">
-          <small>
-            Exibindo página <strong>{{ page + 1 }}</strong> de
-            <strong>{{ totalPages }}</strong> — Total de registros:
-            <strong>{{ totalElements }}</strong>
-          </small>
-        </div>
-
-        <nav>
-          <ul class="pagination mb-0">
-            <li class="page-item" [class.disabled]="page === 0">
-              <button class="page-link" (click)="paginaAnterior()" [disabled]="page === 0">‹ Anterior</button>
-            </li>
-            <li *ngFor="let p of [].constructor(totalPages); let i = index" class="page-item" [class.active]="i === page">
-              <button class="page-link" (click)="irParaPagina(i)">{{ i + 1 }}</button>
-            </li>
-            <li class="page-item" [class.disabled]="page + 1 >= totalPages">
-              <button class="page-link" (click)="proximaPagina()" [disabled]="page + 1 >= totalPages">Próxima ›</button>
-            </li>
-          </ul>
-        </nav>
-      </div> -->
+      <div class="modal-acoes">
+        <button class="btn btn-primary" (click)="criarPasta()">Salvar</button>
+        <button class="btn" (click)="fecharModalCriarPasta()">Cancelar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Modais usando ngIf ligado às variáveis do componente -->
-<div class="modal-backdrop" *ngIf="modalCriarPastaAberto || modalRenomearAberto || modalUploadAberto"></div>
+  <!-- Modal Renomear -->
+  <div class="modal" *ngIf="modalRenomearAberto">
+    <div class="modal-content">
+      <h3>Renomear {{ isFolder(itemParaRenomear) ? 'Pasta' : 'Arquivo' }}</h3>
+      <input type="text" [(ngModel)]="novoNomeItem" />
 
-<!-- Modal Criar Pasta -->
-<div class="modal-dialog" *ngIf="modalCriarPastaAberto">
-  <div class="modal-content">
-    <div class="modal-header bg-primary text-white">
-      <h5 class="modal-title">Nova Pasta</h5>
-      <button type="button" class="btn-close" (click)="fecharModalCriarPasta()"></button>
-    </div>
-    <div class="modal-body">
-      <input type="text" class="form-control" placeholder="Nome da pasta" [(ngModel)]="novoNomePasta" />
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" (click)="criarPasta()">Criar</button>
-      <button class="btn btn-secondary" (click)="fecharModalCriarPasta()">Cancelar</button>
+      <div class="modal-acoes">
+        <button class="btn btn-primary" (click)="renomearItem()">Salvar</button>
+        <button class="btn" (click)="fecharModalRenomear()">Cancelar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Modal Renomear -->
-<div class="modal-dialog" *ngIf="modalRenomearAberto">
-  <div class="modal-content">
-    <div class="modal-header bg-warning text-dark">
-      <h5 class="modal-title">Renomear Item</h5>
-      <button type="button" class="btn-close" (click)="fecharModalRenomear()"></button>
-    </div>
-    <div class="modal-body">
-      <input type="text" class="form-control" [(ngModel)]="novoNomeItem" />
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-warning" (click)="renomearItem()">Salvar</button>
-      <button class="btn btn-secondary" (click)="fecharModalRenomear()">Cancelar</button>
-    </div>
-  </div>
-</div>
+  <!-- Modal Upload -->
+  <div class="modal" *ngIf="modalUploadAberto">
+    <div class="modal-content">
+      <h3>Upload de Arquivo</h3>
+      <input type="file" (change)="onArquivoSelecionado($event)" />
 
-<!-- Modal Upload -->
-<div class="modal-dialog" *ngIf="modalUploadAberto">
-  <div class="modal-content">
-    <div class="modal-header bg-success text-white">
-      <h5 class="modal-title">Upload de Arquivo</h5>
-      <button type="button" class="btn-close" (click)="fecharModalUpload()"></button>
-    </div>
-    <div class="modal-body">
-      <input type="file" class="form-control" (change)="onArquivoSelecionado($event)" />
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-success" (click)="uploadArquivo()">Upload</button>
-      <button class="btn btn-secondary" (click)="fecharModalUpload()">Cancelar</button>
+      <div class="modal-acoes">
+        <button class="btn btn-primary" (click)="uploadArquivo()">Upload</button>
+        <button class="btn" (click)="fecharModalUpload()">Cancelar</button>
+      </div>
     </div>
   </div>
 </div>

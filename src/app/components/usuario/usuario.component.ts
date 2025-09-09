@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MdbFormsModule } from 'mdb-angular-ui-kit/forms';
+
 import {
   MdbModalModule,
   MdbModalRef,
