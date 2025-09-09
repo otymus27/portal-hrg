@@ -10,22 +10,19 @@ import { CommonModule, DecimalPipe } from '@angular/common';
   styleUrls: ['./explorer.component.scss'],
 })
 export class ExplorerComponent implements OnInit {
- pastas: PastaPublica[] = [];
-  arquivos: ArquivoPublico[] = [];
+  pastas: PastaPublica[] = [];
+  pastaAtual: PastaPublica | null = null;
   breadcrumb: PastaPublica[] = [];
-  pastaAtual?: PastaPublica;
+  arquivos: ArquivoPublico[] = [];
   loading = false;
 
+  // Modal
   arquivoSelecionado?: ArquivoPublico;
 
-  constructor(private publicService: PublicService) {}
+  constructor(public publicService: PublicService) {}
 
   ngOnInit(): void {
     this.carregarPastas();
-  }
-
-  get pastasAtuais(): PastaPublica[] {
-    return this.pastaAtual ? this.pastaAtual.subPastas : this.pastas;
   }
 
   carregarPastas(): void {
@@ -35,7 +32,7 @@ export class ExplorerComponent implements OnInit {
         this.pastas = pastas.map(p => ({
           ...p,
           subPastas: p.subPastas ?? [],
-          arquivos: p.arquivos ?? [],
+          arquivos: p.arquivos ?? []
         }));
         this.loading = false;
       },
@@ -45,34 +42,35 @@ export class ExplorerComponent implements OnInit {
 
   abrirPasta(pasta: PastaPublica): void {
     this.breadcrumb.push(pasta);
-    this.pastaAtual = {
-      ...pasta,
-      subPastas: pasta.subPastas ?? [],
-      arquivos: pasta.arquivos ?? []
-    };
+    this.pastaAtual = { ...pasta, subPastas: pasta.subPastas ?? [], arquivos: pasta.arquivos ?? [] };
     this.arquivos = this.pastaAtual.arquivos;
+  }
+
+  abrirSubPasta(subPasta: PastaPublica): void {
+    this.abrirPasta(subPasta);
   }
 
   navegarPara(index: number): void {
+    if(index < 0) {
+      this.breadcrumb = [];
+      this.pastaAtual = null;
+      this.arquivos = [];
+      return;
+    }
     this.breadcrumb = this.breadcrumb.slice(0, index + 1);
-    const pasta = this.breadcrumb[index];
-    this.pastaAtual = {
-      ...pasta,
-      subPastas: pasta.subPastas ?? [],
-      arquivos: pasta.arquivos ?? []
-    };
-    this.arquivos = this.pastaAtual.arquivos;
+    this.pastaAtual = this.breadcrumb[this.breadcrumb.length - 1];
+    this.arquivos = this.pastaAtual.arquivos ?? [];
   }
 
-  abrirArquivo(arquivo: ArquivoPublico): void {
+  abrirArquivo(arquivo: ArquivoPublico) {
     this.arquivoSelecionado = arquivo;
   }
 
-  fecharModal(): void {
+  fecharModal() {
     this.arquivoSelecionado = undefined;
   }
 
-  baixarArquivo(arquivo: ArquivoPublico): void {
+  baixarArquivo(arquivo: ArquivoPublico) {
     this.publicService.downloadArquivo(arquivo.id).subscribe(blob => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -84,11 +82,66 @@ export class ExplorerComponent implements OnInit {
     });
   }
 
-  visualizarArquivo(arquivo: ArquivoPublico): void {
-    this.publicService.downloadArquivo(arquivo.id).subscribe(blob => {
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      this.fecharModal();
-    });
+  // src/app/features/public/pages/explorer/explorer.component.ts
+
+// ...
+visualizarArquivo(arquivo: ArquivoPublico): void {
+  this.publicService.visualizarArquivo(arquivo.id).subscribe((blob) => {
+    let tipoMimeCorrigido = arquivo.tipoMime;
+    
+    // Verifica se o nome do arquivo termina com .pdf (insensível a maiúsculas/minúsculas)
+    // ou se o tipoMime contém 'pdf'.
+    if (arquivo.nome.toLowerCase().endsWith('.pdf') || (arquivo.tipoMime && arquivo.tipoMime.includes('pdf'))) {
+      tipoMimeCorrigido = 'application/pdf';
+    }
+
+    const blobComTipo = new Blob([blob], { type: tipoMimeCorrigido });
+    const url = window.URL.createObjectURL(blobComTipo);
+    
+    // Abre a URL em uma nova aba
+    window.open(url, '_blank');
+    
+    // Fecha o modal após abrir o arquivo
+    this.fecharModal();
+    
+    // É uma boa prática revogar a URL para liberar memória,
+    // mas isso pode ser feito após a nova aba ser carregada
+    // ou em um evento de fechamento da nova aba.
+  });
+}
+// ...
+
+
+
+  getIcon(arquivo: ArquivoPublico): string {
+  const extensao = arquivo.nome.split('.').pop()?.toLowerCase();
+
+  switch (extensao) {
+    case 'pdf':
+      return 'assets/icons/pdf.png';
+    case 'doc':
+    case 'docx':
+      return 'assets/icons/word.png';
+    case 'xls':
+    case 'xlsx':
+      return 'assets/icons/xls.png';
+    case 'ppt':
+    case 'pptx':
+      return 'assets/icons/ppt.png';
+    case 'txt':
+      return 'assets/icons/txt.png';
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+      return 'assets/icons/image.png';
+    default:
+      return 'assets/icons/pdf.png'; // ícone genérico
+  }
+}
+
+
+  voltar() {
+    this.navegarPara(this.breadcrumb.length - 2);
   }
 }

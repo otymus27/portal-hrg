@@ -1,124 +1,74 @@
 .explorer-container {
-  padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 16px;
+}
 
-  .loading {
-    font-size: 1.2rem;
-    color: #555;
-    text-align: center;
-  }
+.loading { font-size: 18px; margin-bottom: 16px; }
 
-  .breadcrumb-container {
-    overflow-x: auto;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #ddd;
-
-    .breadcrumb-scroll {
-      display: flex;
-      gap: 5px;
-      white-space: nowrap;
-
-      .breadcrumb-item {
-        cursor: pointer;
-        color: #007bff;
-        &:hover { text-decoration: underline; }
-      }
-    }
-  }
-
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 15px;
-
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 15px;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      word-break: break-word;
-      min-height: 100px;
-
-      &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-      }
-
-      .icon { font-size: 2rem; margin-bottom: 8px; }
-      .name { font-size: 0.9rem; word-wrap: break-word; max-width: 100%; }
-    }
-
-    .pasta-card { background: #fff8e1; border: 1px solid #f0e68c; }
-    .arquivo-card { background: #e1f7ff; border: 1px solid #a0d2ff; }
-  }
-
-  .empty-state {
-    margin-top: 20px;
-    text-align: center;
-    color: #888;
-    font-style: italic;
+.breadcrumb {
+  margin-bottom: 12px;
+  .breadcrumb-item {
+    cursor: pointer;
+    color: #007bff;
+    &:hover { text-decoration: underline; }
+    &:not(:first-child) { margin-left: 4px; }
   }
 }
 
-/* Modal */
-.modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background-color: rgba(0,0,0,0.5);
+.btn-back {
+  margin-bottom: 16px;
+  cursor: pointer;
+  background: #eee;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  &:hover { background: #ddd; }
+}
+
+.card-container {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-
-  .modal-content {
-    background: #fff;
-    padding: 25px;
-    border-radius: 10px;
-    width: 360px;
-    max-width: 90%;
-    text-align: center;
-    position: relative;
-
-    &.animate { animation: fadeIn 0.25s ease-in-out; }
-
-    .close {
-      position: absolute;
-      top: 10px; right: 15px;
-      font-size: 1.5rem;
-      cursor: pointer;
-    }
-
-    h3 { margin-bottom: 20px; font-size: 1.1rem; }
-
-    .modal-buttons {
-      display: flex;
-      justify-content: space-around;
-
-      button {
-        padding: 8px 15px;
-        font-size: 0.9rem;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.2s;
-
-        &:hover { opacity: 0.8; }
-
-        &:first-child { background-color: #4caf50; color: #fff; }
-        &:last-child { background-color: #2196f3; color: #fff; }
-      }
-    }
-  }
+  width: 140px;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+  overflow: hidden;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+.folder-card .icon, .file-card .icon { font-size: 36px; margin-bottom: 8px; }
+.file-icon { width: 36px; height: 36px; }
+
+.name {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.size { font-size: 12px; color: #666; }
+
+.modal {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  display:flex; justify-content:center; align-items:center; z-index:1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 280px;
+}
+
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }

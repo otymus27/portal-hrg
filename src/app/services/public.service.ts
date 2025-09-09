@@ -29,8 +29,14 @@ export class PublicService {
 
   listarArquivos(pastaId: number): Observable<ArquivoPublico[]> {
     return this.http.get<ArquivoPublico[]>(
-      `${this.apiUrl}/pastas/${pastaId}/arquivos`
+      `${this.apiUrl}/visualizar/arquivo/${pastaId}`
     );
+  }
+
+  visualizarArquivo(arquivoId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/visualizar/arquivo/${arquivoId}`, {
+      responseType: 'blob',
+    });
   }
 
   downloadArquivo(arquivoId: number): Observable<Blob> {
@@ -43,5 +49,15 @@ export class PublicService {
     return this.http.get(`${this.apiUrl}/download/pasta/${id}`, {
       responseType: 'blob',
     });
+  }
+
+  formatarTamanho(tamanhoBytes: number): string {
+    if (tamanhoBytes < 1024) return `${tamanhoBytes} B`;
+    const kb = tamanhoBytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    const mb = kb / 1024;
+    if (mb < 1024) return `${mb.toFixed(1)} MB`;
+    const gb = mb / 1024;
+    return `${gb.toFixed(1)} GB`;
   }
 }
