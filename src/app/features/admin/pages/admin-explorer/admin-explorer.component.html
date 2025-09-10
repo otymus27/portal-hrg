@@ -2,30 +2,56 @@
   <div class="card shadow">
     <div class="card-body">
       <!-- Cabeçalho -->
-      <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded">
+      <div
+        class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded"
+      >
         <h1>Explorador de Arquivos</h1>
-        <button class="btn btn-primary btn-rounded btn-shadow" (click)="abrirModalCriarPasta()">
+        <button
+          class="btn btn-primary btn-rounded btn-shadow"
+          (click)="abrirModalCriarPasta()"
+        >
           <i class="bi bi-folder-plus me-1"></i> Nova Pasta
         </button>
       </div>
 
       <!-- Breadcrumb -->
       <nav class="breadcrumb mt-3 mb-3">
-        <span class="breadcrumb-item text-primary" style="cursor: pointer" (click)="navegarPara(-1)">
+        <span
+          class="breadcrumb-item text-primary"
+          style="cursor: pointer"
+          (click)="navegarPara(-1)"
+        >
           Raiz
         </span>
         <ng-container *ngFor="let pasta of breadcrumb; let i = index">
           <span class="breadcrumb-separator mx-2">/</span>
-          <span class="breadcrumb-item text-primary" style="cursor: pointer" (click)="navegarPara(i)">
+          <span
+            class="breadcrumb-item text-primary"
+            style="cursor: pointer"
+            (click)="navegarPara(i)"
+          >
             {{ pasta.nomePasta }}
           </span>
         </ng-container>
       </nav>
 
-      <!-- Botão Voltar -->
-      <div class="mb-3">
-        <button class="btn btn-outline-secondary" (click)="voltarUmNivel()" [disabled]="breadcrumb.length === 0">
+      <!-- Botões Voltar e Seleção -->
+      <div class="mb-3 d-flex align-items-center gap-2">
+        <button
+          class="btn btn-outline-secondary"
+          (click)="voltarUmNivel()"
+          [disabled]="breadcrumb.length === 0"
+        >
           <i class="bi bi-arrow-left"></i> Voltar
+        </button>
+
+        <!-- Novo botão Excluir Selecionados -->
+        <button
+          class="btn btn-sm btn-danger"
+          [disabled]="itensSelecionados.length === 0"
+          (click)="abrirModalExcluirSelecionados()"
+        >
+          Excluir Selecionados ({{ itensSelecionados.length }})
         </button>
       </div>
 
@@ -39,6 +65,21 @@
       <table class="table table-hover mt-3" *ngIf="!loading">
         <thead>
           <tr>
+            <th style="width: 40px">
+              <!-- Checkbox do cabeçalho -->
+              <input
+                type="checkbox"
+                [checked]="
+                  todosItens.length === itensSelecionados.length &&
+                  itensSelecionados.length > 0
+                "
+                (change)="
+                  itensSelecionados.length === todosItens.length
+                    ? desmarcarTodos()
+                    : marcarTodos()
+                "
+              />
+            </th>
             <th>Nome</th>
             <th class="text-end">Ações</th>
           </tr>
@@ -46,17 +87,38 @@
         <tbody>
           <!-- Pastas -->
           <tr *ngFor="let pasta of pastas">
-            <td class="text-primary fw-bold" style="cursor: pointer" (click)="abrirPasta(pasta)">
+            <td>
+              <input
+                type="checkbox"
+                [checked]="isSelecionado(pasta)"
+                (change)="toggleSelecao(pasta)"
+                (click)="$event.stopPropagation()"
+              />
+            </td>
+            <td
+              class="text-primary fw-bold"
+              style="cursor: pointer"
+              (click)="abrirPasta(pasta)"
+            >
               📁 {{ pasta.nomePasta || "(Sem nome)" }}
             </td>
             <td class="text-end">
-              <button class="btn btn-warning btn-sm me-1" (click)="abrirModalRenomear(pasta); $event.stopPropagation()">
+              <button
+                class="btn btn-warning btn-sm me-1"
+                (click)="abrirModalRenomear(pasta); $event.stopPropagation()"
+              >
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <button class="btn btn-danger btn-sm me-1" (click)="abrirModalExcluir(pasta); $event.stopPropagation()">
+              <button
+                class="btn btn-danger btn-sm me-1"
+                (click)="abrirModalExcluir(pasta); $event.stopPropagation()"
+              >
                 <i class="bi bi-trash"></i>
               </button>
-              <button class="btn btn-secondary btn-sm" (click)="abrirModalUpload(); $event.stopPropagation()">
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="abrirModalUpload(); $event.stopPropagation()"
+              >
                 <i class="bi bi-upload"></i>
               </button>
             </td>
@@ -64,15 +126,32 @@
 
           <!-- Arquivos -->
           <tr *ngFor="let arquivo of arquivos">
+            <td>
+              <input
+                type="checkbox"
+                [checked]="isSelecionado(arquivo)"
+                (change)="toggleSelecao(arquivo)"
+                (click)="$event.stopPropagation()"
+              />
+            </td>
             <td>📄 {{ arquivo.nome }}</td>
             <td class="text-end">
-              <button class="btn btn-success btn-sm me-1" (click)="downloadArquivo(arquivo); $event.stopPropagation()">
+              <button
+                class="btn btn-success btn-sm me-1"
+                (click)="downloadArquivo(arquivo); $event.stopPropagation()"
+              >
                 <i class="bi bi-download"></i>
               </button>
-              <button class="btn btn-warning btn-sm me-1" (click)="abrirModalRenomear(arquivo); $event.stopPropagation()">
+              <button
+                class="btn btn-warning btn-sm me-1"
+                (click)="abrirModalRenomear(arquivo); $event.stopPropagation()"
+              >
                 <i class="bi bi-pencil-square"></i>
               </button>
-              <button class="btn btn-danger btn-sm" (click)="abrirModalExcluir(arquivo); $event.stopPropagation()">
+              <button
+                class="btn btn-danger btn-sm"
+                (click)="abrirModalExcluir(arquivo); $event.stopPropagation()"
+              >
                 <i class="bi bi-trash"></i>
               </button>
             </td>
@@ -80,7 +159,7 @@
 
           <!-- Caso não haja conteúdo -->
           <tr *ngIf="pastas.length === 0 && arquivos.length === 0">
-            <td colspan="2" class="text-center text-muted">
+            <td colspan="3" class="text-center text-muted">
               Nenhum conteúdo encontrado nesta pasta.
             </td>
           </tr>
@@ -94,15 +173,28 @@
   <div class="modal-backdrop" *ngIf="modalCriarPastaAberto">
     <div class="modal-custom">
       <h3>Criar Nova Pasta</h3>
-      <input type="text" [(ngModel)]="novoNomePasta" placeholder="Nome da pasta" class="form-control mb-2" />
+      <input
+        type="text"
+        [(ngModel)]="novoNomePasta"
+        placeholder="Nome da pasta"
+        class="form-control mb-2"
+      />
       <label>Selecionar usuários:</label>
       <div *ngFor="let u of usuarios">
-        <input type="checkbox" [checked]="usuariosSelecionados.includes(u)" (change)="selecionarUsuario(u)" />
+        <input
+          type="checkbox"
+          [checked]="usuariosSelecionados.includes(u)"
+          (change)="selecionarUsuario(u)"
+        />
         {{ u.username }}
       </div>
       <div class="modal-actions mt-3">
-        <button class="btn btn-primary me-2" (click)="criarPasta()">Salvar</button>
-        <button class="btn btn-secondary" (click)="fecharModalCriarPasta()">Cancelar</button>
+        <button class="btn btn-primary me-2" (click)="criarPasta()">
+          Salvar
+        </button>
+        <button class="btn btn-secondary" (click)="fecharModalCriarPasta()">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
@@ -111,10 +203,19 @@
   <div class="modal-backdrop" *ngIf="modalRenomearAberto">
     <div class="modal-custom">
       <h3>Renomear {{ isFolder(itemParaRenomear) ? "Pasta" : "Arquivo" }}</h3>
-      <input type="text" [(ngModel)]="novoNomeItem" placeholder="Novo nome" class="form-control mb-2" />
+      <input
+        type="text"
+        [(ngModel)]="novoNomeItem"
+        placeholder="Novo nome"
+        class="form-control mb-2"
+      />
       <div class="modal-actions mt-3">
-        <button class="btn btn-primary me-2" (click)="renomearItem()">Salvar</button>
-        <button class="btn btn-secondary" (click)="fecharModalRenomear()">Cancelar</button>
+        <button class="btn btn-primary me-2" (click)="renomearItem()">
+          Salvar
+        </button>
+        <button class="btn btn-secondary" (click)="fecharModalRenomear()">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
@@ -123,10 +224,18 @@
   <div class="modal-backdrop" *ngIf="modalUploadAberto">
     <div class="modal-custom">
       <h3>Upload de Arquivo</h3>
-      <input type="file" (change)="onArquivoSelecionado($event)" class="form-control mb-2" />
+      <input
+        type="file"
+        (change)="onArquivoSelecionado($event)"
+        class="form-control mb-2"
+      />
       <div class="modal-actions mt-3">
-        <button class="btn btn-primary me-2" (click)="uploadArquivo()">Upload</button>
-        <button class="btn btn-secondary" (click)="fecharModalUpload()">Cancelar</button>
+        <button class="btn btn-primary me-2" (click)="uploadArquivo()">
+          Upload
+        </button>
+        <button class="btn btn-secondary" (click)="fecharModalUpload()">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
@@ -140,12 +249,52 @@
         <strong>
           <strong>{{ getNomeItem(itemParaExcluir) }}</strong>
         </strong>
-        
       </p>
       <div class="modal-actions mt-3">
-        <button class="btn btn-danger me-2" (click)="confirmarExclusao()">Excluir</button>
-        <button class="btn btn-secondary" (click)="fecharModalExcluir()">Cancelar</button>
+        <button class="btn btn-danger me-2" (click)="confirmarExclusao()">
+          Excluir
+        </button>
+        <button class="btn btn-secondary" (click)="fecharModalExcluir()">
+          Cancelar
+        </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmação de Exclusão de Itens Selecionados -->
+<div class="modal-backdrop" *ngIf="modalExcluirSelecionadosAberto">
+  <div class="modal-custom">
+    <h3>Confirmação de Exclusão</h3>
+    <p>
+      Tem certeza que deseja excluir
+      <strong>{{ itensSelecionados.length }}</strong>
+      {{
+        itensSelecionados.length === 1
+          ? "item selecionado"
+          : "itens selecionados"
+      }}?
+    </p>
+
+    <ul class="list-group mb-3">
+      <li *ngFor="let item of itensSelecionados" class="list-group-item py-1">
+        {{ getNomeItem(item) }}
+      </li>
+    </ul>
+
+    <div class="modal-actions mt-3">
+      <button
+        class="btn btn-danger me-2"
+        (click)="confirmarExclusaoSelecionados()"
+      >
+        Excluir
+      </button>
+      <button
+        class="btn btn-secondary"
+        (click)="fecharModalExcluirSelecionados()"
+      >
+        Cancelar
+      </button>
     </div>
   </div>
 </div>
