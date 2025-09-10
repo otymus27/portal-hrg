@@ -19,6 +19,13 @@ public record PastaCompletaDTO(
                 ? pasta.getArquivos().stream().map(ArquivoDTO::fromEntity).toList()
                 : List.of();
 
+        // Converte subPastas recursivamente
+        List<PastaCompletaDTO> subPastasDTO = pasta.getSubPastas() != null
+                ? pasta.getSubPastas().stream()
+                .map(PastaCompletaDTO::fromEntity)
+                .toList()
+                : List.of();
+
         // Inicialmente subPastas vazio, será preenchido pelo service recursivamente
         return new PastaCompletaDTO(
                 pasta.getId(),
