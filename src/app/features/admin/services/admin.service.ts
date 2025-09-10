@@ -57,20 +57,22 @@ export class AdminService {
 
   // Novo método para buscar pastas e arquivos por ID no backend
   listarConteudoPorId(pastaId: string): Observable<ConteudoPasta> {
-    // Busca uma pasta específica e seu conteúdo aninhado por ID
-    return this.http
-      .get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`)
-      .pipe(
-        map((pasta) => ({
-          pastas: pasta.subPastas || [],
-          arquivos: pasta.arquivos || [],
-        }))
-      );
+    return this.http.get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`).pipe(
+      map((pasta) => ({
+        pastas: (pasta.subPastas || []).map(sub => ({
+          id: sub.id,
+          nome: sub.nome, // garante que o nome venha preenchido
+          subPastas: sub.subPastas || [],
+          arquivos: sub.arquivos || [],
+        })),
+        arquivos: pasta.arquivos || [],
+      }))
+    );
   }
 
   downloadArquivo(arquivoId: string): Observable<Blob> {
     return this.http.get(
-      `${this.apiUrlPublica}/arquivos/${arquivoId}/download`,
+      `${this.apiUrlPublica}/download/arquivo/${arquivoId}`,
       {
         responseType: 'blob',
       }

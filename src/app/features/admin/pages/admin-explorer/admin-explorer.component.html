@@ -1,93 +1,142 @@
-<div class="admin-explorer-container">
-
-  <!-- Breadcrumb -->
-  <nav class="breadcrumb" *ngIf="breadcrumb.length > 0">
-    <span class="breadcrumb-item" (click)="navegarPara(-1)">Raiz</span>
-    <ng-container *ngFor="let pasta of breadcrumb; let i = index">
-      <span class="breadcrumb-separator">/</span>
-      <span class="breadcrumb-item" (click)="navegarPara(i)">{{ pasta.nome }}</span>
-    </ng-container>
-  </nav>
-
-  <!-- Loader -->
-  <div *ngIf="loading" class="loading">⏳ Carregando conteúdo...</div>
-
-  <!-- Lista de pastas -->
-  <div class="lista">
-    <div class="pasta" *ngFor="let pasta of pastas">
-      <div class="pasta-info" (dblclick)="abrirPasta(pasta)">
-        📁 {{ pasta.nome }}
+<div class="container">
+  <div class="card shadow">
+    <div class="card-body">
+      <!-- Cabeçalho -->
+      <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded">
+        <h1>Explorador de Arquivos</h1>
+        <button class="btn btn-primary btn-rounded btn-shadow" (click)="abrirModalCriarPasta()">
+          <i class="bi bi-folder-plus me-1"></i> Nova Pasta
+        </button>
       </div>
-      <div class="acoes">
-        <button class="btn btn-small" (click)="abrirModalRenomear(pasta)">Renomear</button>
-        <button class="btn btn-small btn-danger" (click)="excluirPasta(pasta)">Excluir</button>
-        <button class="btn btn-small" (click)="abrirModalUpload()">Upload</button>
-      </div>
-    </div>
 
-    <!-- Lista de arquivos -->
-    <div class="arquivo" *ngFor="let arquivo of arquivos">
-      <div class="arquivo-info">
-        📄 {{ arquivo.nome }}
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb mt-3 mb-3">
+        <span class="breadcrumb-item text-primary" style="cursor:pointer" (click)="navegarPara(-1)">Raiz</span>
+        <ng-container *ngFor="let pasta of breadcrumb; let i = index">
+          <span class="breadcrumb-separator mx-2">/</span>
+          <span class="breadcrumb-item text-primary" style="cursor:pointer" (click)="navegarPara(i)">
+            {{ pasta.nome || '(Sem nome)' }}
+          </span>
+        </ng-container>
+      </nav>
+
+      <!-- Botão Voltar -->
+      <div class="mb-3">
+        <button class="btn btn-outline-secondary" (click)="voltarUmNivel()" [disabled]="breadcrumb.length === 0">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </button>
       </div>
-      <div class="acoes">
-        <button class="btn btn-small" (click)="downloadArquivo(arquivo)">Download</button>
-        <button class="btn btn-small" (click)="abrirModalRenomear(arquivo)">Renomear</button>
-        <button class="btn btn-small btn-danger" (click)="excluirArquivo(arquivo)">Excluir</button>
+
+      <!-- Loader -->
+      <div *ngIf="loading" class="text-center my-3">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Carregando conteúdo...</p>
       </div>
+
+      <!-- Lista de pastas e arquivos -->
+      <table class="table table-hover mt-3" *ngIf="!loading">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Pastas -->
+          <tr *ngFor="let pasta of pastas">
+            <td class="text-primary fw-bold" style="cursor:pointer" (click)="abrirPasta(pasta)">
+              📁 {{ pasta.nome || '(Sem nome)' }}
+            </td>
+            <td class="text-end">
+              <button class="btn btn-warning btn-sm me-1" (click)="abrirModalRenomear(pasta); $event.stopPropagation()">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn btn-danger btn-sm me-1" (click)="abrirModalExcluir(pasta); $event.stopPropagation()">
+                <i class="bi bi-trash"></i>
+              </button>
+              <button class="btn btn-secondary btn-sm" (click)="abrirModalUpload(); $event.stopPropagation()">
+                <i class="bi bi-upload"></i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Arquivos -->
+          <tr *ngFor="let arquivo of arquivos">
+            <td>📄 {{ arquivo.nome }}</td>
+            <td class="text-end">
+              <button class="btn btn-success btn-sm me-1" (click)="downloadArquivo(arquivo); $event.stopPropagation()">
+                <i class="bi bi-download"></i>
+              </button>
+              <button class="btn btn-warning btn-sm me-1" (click)="abrirModalRenomear(arquivo); $event.stopPropagation()">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="abrirModalExcluir(arquivo); $event.stopPropagation()">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Caso não haja conteúdo -->
+          <tr *ngIf="pastas.length === 0 && arquivos.length === 0">
+            <td colspan="2" class="text-center text-muted">
+              Nenhum conteúdo encontrado nesta pasta.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Botão Criar Pasta -->
-  <button class="btn btn-primary" (click)="abrirModalCriarPasta()">Nova Pasta</button>
-
-  <!-- Modal Criar Pasta -->
-  <div class="modal" *ngIf="modalCriarPastaAberto">
-    <div class="modal-content">
+  <!-- Modais -->
+  <!-- Criar Pasta -->
+  <div class="modal-backdrop" *ngIf="modalCriarPastaAberto">
+    <div class="modal-custom">
       <h3>Criar Nova Pasta</h3>
-      <label>Nome da Pasta:</label>
-      <input type="text" [(ngModel)]="novoNomePasta" />
-      
-      <label>Selecionar Usuários com Permissão:</label>
-      <div class="usuarios-lista">
-        <div *ngFor="let u of usuarios">
-          <input type="checkbox" 
-                 [checked]="usuariosSelecionados.includes(u)" 
-                 (change)="selecionarUsuario(u)" />
-          {{ u.username }}
-        </div>
+      <input type="text" [(ngModel)]="novoNomePasta" placeholder="Nome da pasta" class="form-control mb-2" />
+      <label>Selecionar usuários:</label>
+      <div *ngFor="let u of usuarios">
+        <input type="checkbox" [checked]="usuariosSelecionados.includes(u)" (change)="selecionarUsuario(u)" /> {{ u.username }}
       </div>
-
-      <div class="modal-acoes">
-        <button class="btn btn-primary" (click)="criarPasta()">Salvar</button>
-        <button class="btn" (click)="fecharModalCriarPasta()">Cancelar</button>
+      <div class="modal-actions mt-3">
+        <button class="btn btn-primary me-2" (click)="criarPasta()">Salvar</button>
+        <button class="btn btn-secondary" (click)="fecharModalCriarPasta()">Cancelar</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Renomear -->
-  <div class="modal" *ngIf="modalRenomearAberto">
-    <div class="modal-content">
+  <!-- Renomear -->
+  <div class="modal-backdrop" *ngIf="modalRenomearAberto">
+    <div class="modal-custom">
       <h3>Renomear {{ isFolder(itemParaRenomear) ? 'Pasta' : 'Arquivo' }}</h3>
-      <input type="text" [(ngModel)]="novoNomeItem" />
-
-      <div class="modal-acoes">
-        <button class="btn btn-primary" (click)="renomearItem()">Salvar</button>
-        <button class="btn" (click)="fecharModalRenomear()">Cancelar</button>
+      <input type="text" [(ngModel)]="novoNomeItem" placeholder="Novo nome" class="form-control mb-2" />
+      <div class="modal-actions mt-3">
+        <button class="btn btn-primary me-2" (click)="renomearItem()">Salvar</button>
+        <button class="btn btn-secondary" (click)="fecharModalRenomear()">Cancelar</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Upload -->
-  <div class="modal" *ngIf="modalUploadAberto">
-    <div class="modal-content">
+  <!-- Upload -->
+  <div class="modal-backdrop" *ngIf="modalUploadAberto">
+    <div class="modal-custom">
       <h3>Upload de Arquivo</h3>
-      <input type="file" (change)="onArquivoSelecionado($event)" />
-
-      <div class="modal-acoes">
-        <button class="btn btn-primary" (click)="uploadArquivo()">Upload</button>
-        <button class="btn" (click)="fecharModalUpload()">Cancelar</button>
+      <input type="file" (change)="onArquivoSelecionado($event)" class="form-control mb-2" />
+      <div class="modal-actions mt-3">
+        <button class="btn btn-primary me-2" (click)="uploadArquivo()">Upload</button>
+        <button class="btn btn-secondary" (click)="fecharModalUpload()">Cancelar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmação de Exclusão -->
+<div class="modal-backdrop" *ngIf="modalExcluirAberto">
+  <div class="modal-custom">
+    <h3>Confirmação de Exclusão</h3>
+    <p>Tem certeza que deseja excluir <strong>{{ itemParaExcluir?.nome }}</strong>?</p>
+    <div class="modal-actions mt-3">
+      <button class="btn btn-danger me-2" (click)="confirmarExclusao()">Excluir</button>
+      <button class="btn btn-secondary" (click)="fecharModalExcluir()">Cancelar</button>
     </div>
   </div>
 </div>
