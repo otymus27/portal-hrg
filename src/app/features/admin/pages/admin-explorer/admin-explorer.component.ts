@@ -38,7 +38,6 @@ export class AdminExplorerComponent implements OnInit {
   novoNomePasta = '';
   itemParaRenomear: PastaAdmin | ArquivoAdmin | null = null;
   novoNomeItem = '';
-  arquivoParaUpload: File | null = null;
   itemParaExcluir: PastaAdmin | ArquivoAdmin | null = null;
 
   // Usuários
@@ -47,6 +46,9 @@ export class AdminExplorerComponent implements OnInit {
 
   // Seleção
   itensSelecionados: (PastaAdmin | ArquivoAdmin)[] = [];
+
+  // Upload múltiplo
+  arquivosParaUpload: File[] = [];
 
   constructor(
     private adminService: AdminService,
@@ -91,7 +93,6 @@ export class AdminExplorerComponent implements OnInit {
 
   navegarPara(index: number): void {
     if (index < 0) return this.carregarConteudoRaiz();
-
     this.breadcrumb = this.breadcrumb.slice(0, index + 1);
     this.recarregarConteudo();
   }
@@ -107,7 +108,7 @@ export class AdminExplorerComponent implements OnInit {
     this.itensSelecionados = [];
   }
 
-  private obterPastaAtual(): PastaAdmin | undefined {
+  public obterPastaAtual(): PastaAdmin | undefined {
     return this.breadcrumb[this.breadcrumb.length - 1];
   }
 
@@ -176,33 +177,50 @@ export class AdminExplorerComponent implements OnInit {
   // ---------------- Upload ----------------
   abrirModalUpload(): void {
     this.modalUploadAberto = true;
-    this.arquivoParaUpload = null;
   }
 
   fecharModalUpload(): void {
     this.modalUploadAberto = false;
-    this.arquivoParaUpload = null;
+    this.arquivosParaUpload = [];
   }
 
-  onArquivoSelecionado(event: Event): void {
+  onArquivosSelecionados(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.arquivoParaUpload = input?.files?.[0] || null;
+    if (input?.files) {
+      // Acumula os arquivos selecionados, sem duplicatas pelo name + size
+      const novosArquivos = Array.from(input.files).filter(
+        (novo) =>
+          !this.arquivosParaUpload.some(
+            (existente) =>
+              existente.name === novo.name && existente.size === novo.size
+          )
+      );
+      this.arquivosParaUpload.push(...novosArquivos);
+    }
   }
 
-  uploadArquivo(): void {
-    if (!this.arquivoParaUpload) return;
+  removerArquivoSelecionado(file: File): void {
+    this.arquivosParaUpload = this.arquivosParaUpload.filter((f) => f !== file);
+  }
+
+  uploadArquivos(): void {
     const pastaAtual = this.obterPastaAtual();
     if (!pastaAtual)
       return this.handleError('Selecione uma pasta antes do upload');
+    if (!this.arquivosParaUpload.length) return;
 
+    this.loading = true;
     this.adminService
-      .uploadArquivo(this.arquivoParaUpload, pastaAtual.id)
+      .uploadMultiplosArquivos(this.arquivosParaUpload, pastaAtual.id)
       .subscribe({
         next: () => {
           this.recarregarConteudo();
           this.fecharModalUpload();
+          this.loading = false;
+          this.arquivosParaUpload = [];
         },
-        error: (err: any) => this.handleError('Erro no upload', err),
+        error: (err) =>
+          this.handleError('Erro ao fazer upload dos arquivos', err),
       });
   }
 
@@ -239,8 +257,9 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   inverterSelecao(): void {
-    const todos = this.todosItens;
-    this.itensSelecionados = todos.filter((item) => !this.isSelecionado(item));
+    this.itensSelecionados = this.todosItens.filter(
+      (item) => !this.isSelecionado(item)
+    );
   }
 
   // ---------------- Exclusão ----------------
@@ -282,7 +301,7 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   confirmarExclusaoSelecionados(): void {
-    if (this.itensSelecionados.length === 0) return;
+    if (!this.itensSelecionados.length) return;
 
     const pastasSelecionadas = this.itensSelecionados.filter(this.isPasta);
     const arquivosSelecionados = this.itensSelecionados.filter(
@@ -290,11 +309,9 @@ export class AdminExplorerComponent implements OnInit {
     );
 
     this.loading = true;
-
     const requests: Observable<any>[] = [];
 
-    // Exclusão de pastas em lote
-    if (pastasSelecionadas.length > 0) {
+    if (pastasSelecionadas.length) {
       const dto: PastaExcluirDTO = {
         idsPastas: pastasSelecionadas.map((p) => p.id),
         excluirConteudo: true,
@@ -309,12 +326,14 @@ export class AdminExplorerComponent implements OnInit {
       );
     }
 
-    // Exclusão de arquivos individualmente
     arquivosSelecionados.forEach((arquivo) =>
       requests.push(
         this.adminService.excluirArquivo((arquivo as ArquivoAdmin).id).pipe(
           catchError((err) => {
-            this.handleError(`Erro ao excluir arquivo ${(arquivo as ArquivoAdmin).nome}`, err);
+            this.handleError(
+              `Erro ao excluir arquivo ${(arquivo as ArquivoAdmin).nome}`,
+              err
+            );
             return of(null);
           })
         )

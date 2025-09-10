@@ -6,12 +6,22 @@
         class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded"
       >
         <h1>Explorador de Arquivos</h1>
-        <button
-          class="btn btn-primary btn-rounded btn-shadow"
-          (click)="abrirModalCriarPasta()"
-        >
-          <i class="bi bi-folder-plus me-1"></i> Nova Pasta
-        </button>
+        <div class="d-flex gap-2">
+          <button
+            class="btn btn-primary btn-rounded btn-shadow"
+            (click)="abrirModalCriarPasta()"
+          >
+            <i class="bi bi-folder-plus me-1"></i> Nova Pasta
+          </button>
+
+          <button
+            class="btn btn-success btn-rounded btn-shadow"
+            [disabled]="!obterPastaAtual()"
+            (click)="abrirModalUpload()"
+          >
+            <i class="bi bi-upload me-1"></i> Upload
+          </button>
+        </div>
       </div>
 
       <!-- Breadcrumb -->
@@ -45,7 +55,6 @@
           <i class="bi bi-arrow-left"></i> Voltar
         </button>
 
-        <!-- Novo botão Excluir Selecionados -->
         <button
           class="btn btn-sm btn-danger"
           [disabled]="itensSelecionados.length === 0"
@@ -66,7 +75,6 @@
         <thead>
           <tr>
             <th style="width: 40px">
-              <!-- Checkbox do cabeçalho -->
               <input
                 type="checkbox"
                 [checked]="
@@ -114,12 +122,6 @@
                 (click)="abrirModalExcluir(pasta); $event.stopPropagation()"
               >
                 <i class="bi bi-trash"></i>
-              </button>
-              <button
-                class="btn btn-secondary btn-sm"
-                (click)="abrirModalUpload(); $event.stopPropagation()"
-              >
-                <i class="bi bi-upload"></i>
               </button>
             </td>
           </tr>
@@ -220,35 +222,65 @@
     </div>
   </div>
 
-  <!-- Upload -->
-  <div class="modal-backdrop" *ngIf="modalUploadAberto">
-    <div class="modal-custom">
-      <h3>Upload de Arquivo</h3>
-      <input
-        type="file"
-        (change)="onArquivoSelecionado($event)"
-        class="form-control mb-2"
-      />
-      <div class="modal-actions mt-3">
-        <button class="btn btn-primary me-2" (click)="uploadArquivo()">
-          Upload
-        </button>
-        <button class="btn btn-secondary" (click)="fecharModalUpload()">
-          Cancelar
-        </button>
+  <!-- Upload de Arquivos (Modal) -->
+<div class="modal-backdrop" *ngIf="modalUploadAberto">
+  <div class="modal-custom">
+    <h3>Upload de Arquivos</h3>
+
+    <!-- Input de múltiplos arquivos -->
+    <input
+      type="file"
+      (change)="onArquivosSelecionados($event)"
+      class="form-control mb-3"
+      multiple
+    />
+
+    <!-- Lista de arquivos selecionados estilo "carrinho" -->
+    <div *ngIf="arquivosParaUpload.length > 0" class="mb-3">
+      <p>Arquivos para upload:</p>
+      <div class="list-group arquivos-carrinho" style="max-height: 250px; overflow-y: auto;">
+        <div
+          *ngFor="let arquivo of arquivosParaUpload"
+          class="list-group-item d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <strong>{{ arquivo.name }}</strong>
+            <small class="text-muted">({{ arquivo.size | number }} bytes)</small>
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger"
+            (click)="removerArquivoSelecionado(arquivo)"
+          >
+            &times;
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Modal Confirmação de Exclusão -->
+    <!-- Ações -->
+    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
+      <button
+        class="btn btn-primary"
+        (click)="uploadArquivos()"
+        [disabled]="arquivosParaUpload.length === 0"
+      >
+        Upload
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalUpload()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- Modal Exclusão -->
   <div class="modal-backdrop" *ngIf="modalExcluirAberto">
     <div class="modal-custom">
       <h3>Confirmação de Exclusão</h3>
       <p>
         Tem certeza que deseja excluir
-        <strong>
-          <strong>{{ getNomeItem(itemParaExcluir) }}</strong>
-        </strong>
+        <strong>{{ getNomeItem(itemParaExcluir) }}</strong>?
       </p>
       <div class="modal-actions mt-3">
         <button class="btn btn-danger me-2" (click)="confirmarExclusao()">
@@ -260,41 +292,39 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- Modal Confirmação de Exclusão de Itens Selecionados -->
-<div class="modal-backdrop" *ngIf="modalExcluirSelecionadosAberto">
-  <div class="modal-custom">
-    <h3>Confirmação de Exclusão</h3>
-    <p>
-      Tem certeza que deseja excluir
-      <strong>{{ itensSelecionados.length }}</strong>
-      {{
-        itensSelecionados.length === 1
-          ? "item selecionado"
-          : "itens selecionados"
-      }}?
-    </p>
-
-    <ul class="list-group mb-3">
-      <li *ngFor="let item of itensSelecionados" class="list-group-item py-1">
-        {{ getNomeItem(item) }}
-      </li>
-    </ul>
-
-    <div class="modal-actions mt-3">
-      <button
-        class="btn btn-danger me-2"
-        (click)="confirmarExclusaoSelecionados()"
-      >
-        Excluir
-      </button>
-      <button
-        class="btn btn-secondary"
-        (click)="fecharModalExcluirSelecionados()"
-      >
-        Cancelar
-      </button>
+  <!-- Modal Exclusão Itens Selecionados -->
+  <div class="modal-backdrop" *ngIf="modalExcluirSelecionadosAberto">
+    <div class="modal-custom">
+      <h3>Confirmação de Exclusão</h3>
+      <p>
+        Tem certeza que deseja excluir
+        <strong>{{ itensSelecionados.length }}</strong>
+        {{
+          itensSelecionados.length === 1
+            ? 'item selecionado'
+            : 'itens selecionados'
+        }}?
+      </p>
+      <ul class="list-group mb-3">
+        <li *ngFor="let item of itensSelecionados" class="list-group-item py-1">
+          {{ getNomeItem(item) }}
+        </li>
+      </ul>
+      <div class="modal-actions mt-3">
+        <button
+          class="btn btn-danger me-2"
+          (click)="confirmarExclusaoSelecionados()"
+        >
+          Excluir
+        </button>
+        <button
+          class="btn btn-secondary"
+          (click)="fecharModalExcluirSelecionados()"
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
   </div>
 </div>

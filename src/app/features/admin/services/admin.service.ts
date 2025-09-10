@@ -112,13 +112,24 @@ export class AdminService {
     });
   }
 
-  // --- Arquivos ---
+  // --- Upload de um arquivo ---
   uploadArquivo(file: File, pastaId: string): Observable<ArquivoAdmin> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('pastaId', pastaId);
     return this.http.post<ArquivoAdmin>(
       `${this.apiUrlAdminArquivos}/upload`,
+      formData
+    );
+  }
+
+  // --- Upload de vários arquivos ---
+  uploadMultiplosArquivos(files: File[], pastaId: string) {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('arquivos', file));
+
+    return this.http.post(
+      `${this.apiUrlAdminArquivos}/pasta/${pastaId}/upload-multiplos`,
       formData
     );
   }
