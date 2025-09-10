@@ -33,6 +33,16 @@ export interface ConteudoPasta {
   arquivos: ArquivoAdmin[];
 }
 
+export interface PastaCompletaDTO {
+  id: number;
+  nomePasta: string;
+  caminhoCompleto: string;
+  dataCriacao: string;
+  dataAtualizacao: string;
+  arquivos: ArquivoAdmin[];
+  subPastas: PastaCompletaDTO[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   // Endpoints Privados (admin) para operações de CRUD
@@ -57,18 +67,20 @@ export class AdminService {
 
   // Novo método para buscar pastas e arquivos por ID no backend
   listarConteudoPorId(pastaId: string): Observable<ConteudoPasta> {
-    return this.http.get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`).pipe(
+  return this.http
+    .get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`)
+    .pipe(
       map((pasta) => ({
-        pastas: (pasta.subPastas || []).map(sub => ({
-          id: sub.id,
-          nome: sub.nome, // garante que o nome venha preenchido
-          subPastas: sub.subPastas || [],
-          arquivos: sub.arquivos || [],
+        pastas: (pasta.subPastas || []).map(sp => ({
+          id: sp.id,
+          nome: sp.nome, // <-- aqui estava o problema
+          subPastas: sp.subPastas,
+          arquivos: sp.arquivos,
         })),
         arquivos: pasta.arquivos || [],
       }))
     );
-  }
+}
 
   downloadArquivo(arquivoId: string): Observable<Blob> {
     return this.http.get(
