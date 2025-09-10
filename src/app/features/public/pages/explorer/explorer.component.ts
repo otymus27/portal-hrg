@@ -1,14 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { PublicService, PastaPublica, ArquivoPublico } from '../../../../services/public.service';
-import { CommonModule, DecimalPipe } from '@angular/common';
-import { HeaderComponent } from "../../../../components/layout-admin/header/header.component";
-import { FooterComponent } from "../../../../components/layout-admin/footer/footer.component";
+import { CommonModule} from '@angular/common';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-explorer',
   standalone: true, // Adicionado para componentes autônomos
-  imports: [CommonModule, DecimalPipe, HeaderComponent, FooterComponent],
+  imports: [CommonModule],
   templateUrl: './explorer.component.html',
   styleUrls: ['./explorer.component.scss'],
 })

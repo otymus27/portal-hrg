@@ -11,11 +11,13 @@
 
       <!-- Breadcrumb -->
       <nav class="breadcrumb mt-3 mb-3">
-        <span class="breadcrumb-item text-primary" style="cursor:pointer" (click)="navegarPara(-1)">Raiz</span>
+        <span class="breadcrumb-item text-primary" style="cursor: pointer" (click)="navegarPara(-1)">
+          Raiz
+        </span>
         <ng-container *ngFor="let pasta of breadcrumb; let i = index">
           <span class="breadcrumb-separator mx-2">/</span>
-          <span class="breadcrumb-item text-primary" style="cursor:pointer" (click)="navegarPara(i)">
-            {{ pasta.nome || '(Sem nome)' }}
+          <span class="breadcrumb-item text-primary" style="cursor: pointer" (click)="navegarPara(i)">
+            {{ pasta.nomePasta }}
           </span>
         </ng-container>
       </nav>
@@ -44,8 +46,8 @@
         <tbody>
           <!-- Pastas -->
           <tr *ngFor="let pasta of pastas">
-            <td class="text-primary fw-bold" style="cursor:pointer" (click)="abrirPasta(pasta)">
-              📁 {{ pasta.nome || '(Sem nome)' }}
+            <td class="text-primary fw-bold" style="cursor: pointer" (click)="abrirPasta(pasta)">
+              📁 {{ pasta.nomePasta || "(Sem nome)" }}
             </td>
             <td class="text-end">
               <button class="btn btn-warning btn-sm me-1" (click)="abrirModalRenomear(pasta); $event.stopPropagation()">
@@ -95,7 +97,8 @@
       <input type="text" [(ngModel)]="novoNomePasta" placeholder="Nome da pasta" class="form-control mb-2" />
       <label>Selecionar usuários:</label>
       <div *ngFor="let u of usuarios">
-        <input type="checkbox" [checked]="usuariosSelecionados.includes(u)" (change)="selecionarUsuario(u)" /> {{ u.username }}
+        <input type="checkbox" [checked]="usuariosSelecionados.includes(u)" (change)="selecionarUsuario(u)" />
+        {{ u.username }}
       </div>
       <div class="modal-actions mt-3">
         <button class="btn btn-primary me-2" (click)="criarPasta()">Salvar</button>
@@ -107,7 +110,7 @@
   <!-- Renomear -->
   <div class="modal-backdrop" *ngIf="modalRenomearAberto">
     <div class="modal-custom">
-      <h3>Renomear {{ isFolder(itemParaRenomear) ? 'Pasta' : 'Arquivo' }}</h3>
+      <h3>Renomear {{ isFolder(itemParaRenomear) ? "Pasta" : "Arquivo" }}</h3>
       <input type="text" [(ngModel)]="novoNomeItem" placeholder="Novo nome" class="form-control mb-2" />
       <div class="modal-actions mt-3">
         <button class="btn btn-primary me-2" (click)="renomearItem()">Salvar</button>
@@ -127,16 +130,22 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- Modal Confirmação de Exclusão -->
-<div class="modal-backdrop" *ngIf="modalExcluirAberto">
-  <div class="modal-custom">
-    <h3>Confirmação de Exclusão</h3>
-    <p>Tem certeza que deseja excluir <strong>{{ itemParaExcluir?.nome }}</strong>?</p>
-    <div class="modal-actions mt-3">
-      <button class="btn btn-danger me-2" (click)="confirmarExclusao()">Excluir</button>
-      <button class="btn btn-secondary" (click)="fecharModalExcluir()">Cancelar</button>
+  <!-- Modal Confirmação de Exclusão -->
+  <div class="modal-backdrop" *ngIf="modalExcluirAberto">
+    <div class="modal-custom">
+      <h3>Confirmação de Exclusão</h3>
+      <p>
+        Tem certeza que deseja excluir
+        <strong>
+          <strong>{{ getNomeItem(itemParaExcluir) }}</strong>
+        </strong>
+        
+      </p>
+      <div class="modal-actions mt-3">
+        <button class="btn btn-danger me-2" (click)="confirmarExclusao()">Excluir</button>
+        <button class="btn btn-secondary" (click)="fecharModalExcluir()">Cancelar</button>
+      </div>
     </div>
   </div>
 </div>

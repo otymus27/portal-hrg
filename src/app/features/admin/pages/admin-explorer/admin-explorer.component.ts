@@ -1,7 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminService, PastaAdmin, ArquivoAdmin, ConteudoPasta } from '../../services/admin.service';
+import {
+  AdminService,
+  PastaAdmin,
+  ArquivoAdmin,
+  ConteudoPasta,
+} from '../../services/admin.service';
 import { UsuarioService } from '../../../../services/usuario.service';
 import { Usuario } from '../../../../models/usuario';
 import { Paginacao } from '../../../../models/paginacao';
@@ -36,7 +41,10 @@ export class AdminExplorerComponent implements OnInit {
   usuarios: Usuario[] = [];
   usuariosSelecionados: Usuario[] = [];
 
-  constructor(private adminService: AdminService, private usuarioService: UsuarioService) {}
+  constructor(
+    private adminService: AdminService,
+    private usuarioService: UsuarioService
+  ) {}
 
   ngOnInit(): void {
     this.carregarConteudoRaiz();
@@ -47,7 +55,7 @@ export class AdminExplorerComponent implements OnInit {
   carregarConteudoRaiz(): void {
     this.loading = true;
     this.adminService.listarConteudoRaiz().subscribe({
-      next: (conteudo) => {
+      next: (conteudo: ConteudoPasta) => {
         this.pastas = conteudo.pastas;
         this.arquivos = conteudo.arquivos;
         this.breadcrumb = [];
@@ -65,7 +73,7 @@ export class AdminExplorerComponent implements OnInit {
     this.breadcrumb.push(pasta);
     this.loading = true;
     this.adminService.listarConteudoPorId(pasta.id).subscribe({
-      next: (conteudo) => {
+      next: (conteudo: ConteudoPasta) => {
         this.pastas = conteudo.pastas;
         this.arquivos = conteudo.arquivos;
         this.loading = false;
@@ -95,7 +103,9 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   private obterPastaAtual(): PastaAdmin | undefined {
-    return this.breadcrumb.length > 0 ? this.breadcrumb[this.breadcrumb.length - 1] : undefined;
+    return this.breadcrumb.length > 0
+      ? this.breadcrumb[this.breadcrumb.length - 1]
+      : undefined;
   }
 
   private recarregarConteudo(): void {
@@ -119,7 +129,7 @@ export class AdminExplorerComponent implements OnInit {
     if (!this.novoNomePasta || this.usuariosSelecionados.length === 0) return;
     const body = {
       nome: this.novoNomePasta,
-      pastaPaiId: this.obterPastaAtual()?.id,
+      pastaPaiId: this.obterPastaAtual()?.id ?? undefined,
       usuariosComPermissaoIds: this.usuariosSelecionados.map((u) => u.id),
     };
     this.adminService.criarPasta(body).subscribe({
@@ -133,7 +143,7 @@ export class AdminExplorerComponent implements OnInit {
 
   abrirModalRenomear(item: PastaAdmin | ArquivoAdmin): void {
     this.itemParaRenomear = item;
-    this.novoNomeItem = item.nome;
+    this.novoNomeItem = this.isPasta(item) ? item.nomePasta : item.nome;
     this.modalRenomearAberto = true;
   }
 
@@ -146,15 +156,13 @@ export class AdminExplorerComponent implements OnInit {
   renomearItem(): void {
     if (!this.itemParaRenomear || !this.novoNomeItem) return;
     if ('subPastas' in this.itemParaRenomear) {
-      this.adminService.renomearPasta(this.itemParaRenomear.id, this.novoNomeItem).subscribe({
-        next: () => this.recarregarConteudo(),
-        error: (err) => console.error('Erro ao renomear pasta:', err),
-      });
+      this.adminService
+        .renomearPasta(this.itemParaRenomear.id, this.novoNomeItem)
+        .subscribe(() => this.recarregarConteudo());
     } else {
-      this.adminService.renomearArquivo(this.itemParaRenomear.id, this.novoNomeItem).subscribe({
-        next: () => this.recarregarConteudo(),
-        error: (err) => console.error('Erro ao renomear arquivo:', err),
-      });
+      this.adminService
+        .renomearArquivo(this.itemParaRenomear.id, this.novoNomeItem)
+        .subscribe(() => this.recarregarConteudo());
     }
     this.fecharModalRenomear();
   }
@@ -172,9 +180,13 @@ export class AdminExplorerComponent implements OnInit {
   confirmarExclusao(): void {
     if (!this.itemParaExcluir) return;
     if ('subPastas' in this.itemParaExcluir) {
-      this.adminService.excluirPasta(this.itemParaExcluir.id).subscribe(() => this.recarregarConteudo());
+      this.adminService
+        .excluirPasta(this.itemParaExcluir.id)
+        .subscribe(() => this.recarregarConteudo());
     } else {
-      this.adminService.excluirArquivo(this.itemParaExcluir.id).subscribe(() => this.recarregarConteudo());
+      this.adminService
+        .excluirArquivo(this.itemParaExcluir.id)
+        .subscribe(() => this.recarregarConteudo());
     }
     this.fecharModalExcluir();
   }
@@ -197,12 +209,15 @@ export class AdminExplorerComponent implements OnInit {
   uploadArquivo(): void {
     if (!this.arquivoParaUpload) return;
     const pastaAtual = this.obterPastaAtual();
-    if (!pastaAtual) return console.error('Selecione uma pasta antes do upload.');
+    if (!pastaAtual)
+      return console.error('Selecione uma pasta antes do upload.');
 
-    this.adminService.uploadArquivo(this.arquivoParaUpload, pastaAtual.id).subscribe(() => {
-      this.recarregarConteudo();
-      this.fecharModalUpload();
-    });
+    this.adminService
+      .uploadArquivo(this.arquivoParaUpload, pastaAtual.id)
+      .subscribe(() => {
+        this.recarregarConteudo();
+        this.fecharModalUpload();
+      });
   }
 
   downloadArquivo(arquivo: ArquivoAdmin): void {
@@ -220,14 +235,25 @@ export class AdminExplorerComponent implements OnInit {
     return !!item && 'subPastas' in item;
   }
 
+  // Type guard
+  isPasta(item: PastaAdmin | ArquivoAdmin): item is PastaAdmin {
+    return (item as PastaAdmin).subPastas !== undefined;
+  }
+
+  // Função para obter o nome do item
+  getNomeItem(item: PastaAdmin | ArquivoAdmin | null): string {
+    if (!item) return '';
+    return this.isPasta(item) ? item.nomePasta : item.nome;
+  }
+
   // ---------------- Usuários ----------------
   carregarUsuarios(): void {
     this.usuarioService.listar().subscribe({
-  next: (resposta: Paginacao<Usuario>) => {
-    this.usuarios = resposta.content || [];
-  },
-  error: () => console.error('Erro ao carregar usuários'),
-});
+      next: (resposta: Paginacao<Usuario>) => {
+        this.usuarios = resposta.content || [];
+      },
+      error: () => console.error('Erro ao carregar usuários'),
+    });
   }
 
   selecionarUsuario(usuario: Usuario): void {
@@ -235,4 +261,5 @@ export class AdminExplorerComponent implements OnInit {
     if (idx === -1) this.usuariosSelecionados.push(usuario);
     else this.usuariosSelecionados.splice(idx, 1);
   }
+
 }

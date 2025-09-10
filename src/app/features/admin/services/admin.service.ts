@@ -13,7 +13,7 @@ export interface Paginacao<T> {
 // Interfaces exclusivas para a área administrativa
 export interface PastaAdmin {
   id: string;
-  nome: string;
+  nomePasta: string;
   subPastas?: PastaAdmin[];
   arquivos?: ArquivoAdmin[];
 }
@@ -54,33 +54,39 @@ export class AdminService {
 
   constructor(private http: HttpClient) {}
 
-  // --- Métodos de Listagem (acesso público) ---
+  // // --- Métodos de Listagem (acesso público) ---
+  // listarConteudoRaiz(): Observable<ConteudoPasta> {
+  //   // Lista apenas as pastas raiz, sem subpastas ou arquivos aninhados
+  //   return this.http.get<PastaAdmin[]>(`${this.apiUrlPublica}/pastas`).pipe(
+  //     map((pastas) => ({
+  //       pastas,
+  //       arquivos: [],
+  //     }))
+  //   );
+  // }
+
+  // --- Métodos de Listagem (acesso privado) ---
   listarConteudoRaiz(): Observable<ConteudoPasta> {
     // Lista apenas as pastas raiz, sem subpastas ou arquivos aninhados
-    return this.http.get<PastaAdmin[]>(`${this.apiUrlPublica}/pastas`).pipe(
-      map((pastas) => ({
-        pastas,
-        arquivos: [],
-      }))
-    );
+    return this.http
+      .get<PastaAdmin[]>(`${this.apiUrlAdminPastas}/subpastas`)
+      .pipe(
+        map((pastas) => ({
+          pastas,
+          arquivos: [],
+        }))
+      );
   }
 
   // Novo método para buscar pastas e arquivos por ID no backend
   listarConteudoPorId(pastaId: string): Observable<ConteudoPasta> {
-  return this.http
-    .get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`)
-    .pipe(
-      map((pasta) => ({
-        pastas: (pasta.subPastas || []).map(sp => ({
-          id: sp.id,
-          nome: sp.nome, // <-- aqui estava o problema
-          subPastas: sp.subPastas,
-          arquivos: sp.arquivos,
-        })),
-        arquivos: pasta.arquivos || [],
+    return this.http.get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`).pipe(
+      map(pasta => ({
+        pastas: pasta.subPastas || [],
+        arquivos: pasta.arquivos || []
       }))
     );
-}
+  }
 
   downloadArquivo(arquivoId: string): Observable<Blob> {
     return this.http.get(
