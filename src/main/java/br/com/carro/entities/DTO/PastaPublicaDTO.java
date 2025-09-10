@@ -29,7 +29,6 @@ public class PastaPublicaDTO {
         if (pasta.getArquivos() != null && !pasta.getArquivos().isEmpty()) {
             dto.setArquivos(
                     pasta.getArquivos().stream()
-                            .filter(Arquivo::isPublico)
                             .map(ArquivoDTO::fromEntity)
                             .toList()
             );

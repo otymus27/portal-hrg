@@ -1,7 +1,9 @@
 package br.com.carro.entities.DTO;
 
-// Para renomear pasta
+import java.util.Set;
+
+// Para atualizar pasta
 public record PastaUpdateDTO(
-        Long id,
-        String novoNome
+        String nome,
+        Set<Long> usuariosComPermissaoIds
 ) {}

@@ -1,5 +1,6 @@
 package br.com.carro.services;
 
+import br.com.carro.controllers.PastaController;
 import br.com.carro.entities.Arquivo;
 import br.com.carro.entities.DTO.*;
 import br.com.carro.entities.Pasta;
@@ -10,6 +11,8 @@ import br.com.carro.repositories.UsuarioRepository;
 import br.com.carro.utils.AuthService;
 import br.com.carro.utils.FileUtils;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class PastaService {
+    private static final Logger logger = LoggerFactory.getLogger(PastaService.class);
 
     @Autowired
     private ArquivoRepository arquivoRepository;
@@ -41,8 +45,9 @@ public class PastaService {
         this.arquivoRepository = arquivoRepository;
     }
 
+    // ✅ ENDPOINT 01 - Service para criar pasta raiz ou subpastas
     @Transactional
-    public Pasta criarPasta(PastaRequestDTO pastaDTO, Usuario usuarioLogado) {
+    public Pasta criarPasta(PastaRequestDTO pastaDTO, Usuario usuarioLogado) throws AccessDeniedException {
         if (usuarioLogado == null) {
             throw new SecurityException("Usuário não autenticado.");
         }
@@ -54,7 +59,7 @@ public class PastaService {
                     .orElseThrow(() -> new EntityNotFoundException("Pasta pai não encontrada."));
         }
 
-        // Validação de permissão
+        // valida permissões (lança AccessDeniedException se não permitido)
         validarPermissaoCriacao(usuarioLogado, pastaPai);
 
         // Determina caminho da nova pasta
@@ -71,12 +76,19 @@ public class PastaService {
             throw new RuntimeException("Erro ao criar a pasta no sistema de arquivos.", e);
         }
 
-        // Busca usuários com permissão
-        Set<Usuario> usuariosComPermissao = usuarioRepository.findAllById(pastaDTO.usuariosComPermissaoIds())
-                .stream().collect(Collectors.toSet());
+        Set<Usuario> usuariosComPermissao = new HashSet<>();
 
-        if (usuariosComPermissao.size() != pastaDTO.usuariosComPermissaoIds().size()) {
-            throw new IllegalArgumentException("Um ou mais IDs de usuário fornecidos não são válidos.");
+        if (pastaDTO.usuariosComPermissaoIds() != null && !pastaDTO.usuariosComPermissaoIds().isEmpty()) {
+            // Busca usuários com permissão
+            usuariosComPermissao = usuarioRepository.findAllById(pastaDTO.usuariosComPermissaoIds())
+                    .stream().collect(Collectors.toSet());
+
+            if (usuariosComPermissao.size() != pastaDTO.usuariosComPermissaoIds().size()) {
+                throw new IllegalArgumentException("Um ou mais IDs de usuário fornecidos não são válidos.");
+            }
+        } else {
+            // Nenhum usuário informado → adiciona o usuário logado como padrão
+            usuariosComPermissao.add(usuarioLogado);
         }
 
         // Cria e salva a nova pasta
@@ -93,6 +105,7 @@ public class PastaService {
 
         return pastaRepository.save(novaPasta);
     }
+
 
     // ✅ Método adicional para listar pastas raiz
     public java.util.List<Pasta> listarPastasRaiz(Usuario usuario) {
@@ -125,6 +138,26 @@ public class PastaService {
         }
 
         return mapRecursivo(pasta, usuarioLogado, filtro, 0);
+    }
+
+    /**
+     * Lista todas as pastas visíveis para o usuário logado,
+     * aplicando filtros e mapeando recursivamente subpastas e arquivos.
+     */
+    // ENDPOINT 07 - Lista todas as pastas visíveis para o usuário logado
+    @Transactional(readOnly = true)
+    public List<PastaCompletaDTO> listarPastasPorUsuario(Usuario usuarioLogado, PastaFilterDTO filtro) {
+        // Admin vê todas as pastas raiz, outros apenas as pastas onde tem permissão
+        List<Pasta> pastasRaiz;
+        if (usuarioLogado.isAdmin()) {
+            pastasRaiz = pastaRepository.findByPastaPaiIsNull();
+        } else {
+            pastasRaiz = pastaRepository.findByPastaPaiIsNullAndUsuariosComPermissaoContains(usuarioLogado);
+        }
+
+        return pastasRaiz.stream()
+                .map(pasta -> mapRecursivo(pasta, usuarioLogado, filtro, 0))
+                .collect(Collectors.toList());
     }
 
     private PastaCompletaDTO mapRecursivo(Pasta pasta, Usuario usuarioLogado, PastaFilterDTO filtro, int nivelAtual) {
@@ -288,6 +321,65 @@ public class PastaService {
 
         return pastaRepository.save(pasta);
     }
+
+    // ✅ ENDPOINT 06 - Service para atualizar campos da pasta raiz ou subpastas
+    @Transactional
+    public Pasta atualizarPasta(Long pastaId, PastaUpdateDTO pastaDTO, Usuario usuarioLogado) throws AccessDeniedException {
+        Pasta pasta = pastaRepository.findById(pastaId)
+                .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada."));
+
+        // 🔐 Verifica permissão
+        if (!usuarioLogado.isAdmin() && !pasta.getUsuariosComPermissao().contains(usuarioLogado)) {
+            throw new AccessDeniedException("Você não tem permissão para atualizar esta pasta.");
+        }
+
+        // 📝 Atualiza nome se foi enviado
+        if (pastaDTO.nome() != null && !pastaDTO.nome().isBlank()
+                && !pastaDTO.nome().equals(pasta.getNomePasta())) {
+
+            Path caminhoAtual = Paths.get(pasta.getCaminhoCompleto());
+            Path caminhoNovo = caminhoAtual.getParent().resolve(FileUtils.sanitizeFileName(pastaDTO.nome()));
+
+            if (Files.exists(caminhoNovo)) {
+                throw new IllegalArgumentException("Já existe uma pasta com este nome neste local.");
+            }
+
+            try {
+                Files.move(caminhoAtual, caminhoNovo);
+            } catch (IOException e) {
+                throw new RuntimeException("Erro ao renomear a pasta no sistema de arquivos.", e);
+            }
+
+            pasta.setNomePasta(pastaDTO.nome());
+            pasta.setCaminhoCompleto(caminhoNovo.toString());
+
+            // Atualiza caminhos das subpastas e arquivos recursivamente
+            atualizarCaminhoRecursivo(pasta, caminhoNovo);
+        }
+
+        // 🧑‍🤝‍🧑 Atualiza usuários com permissão (se informado no DTO)
+        if (pastaDTO.usuariosComPermissaoIds() != null) {
+            Set<Usuario> usuarios = usuarioRepository.findAllById(pastaDTO.usuariosComPermissaoIds())
+                    .stream().collect(Collectors.toSet());
+
+            if (usuarios.size() != pastaDTO.usuariosComPermissaoIds().size()) {
+                throw new IllegalArgumentException("Um ou mais IDs de usuário fornecidos não são válidos.");
+            }
+
+            pasta.setUsuariosComPermissao(usuarios);
+        }
+
+        // 🔑 Garante pelo menos um usuário com permissão
+        if (pasta.getUsuariosComPermissao() == null || pasta.getUsuariosComPermissao().isEmpty()) {
+            pasta.setUsuariosComPermissao(Set.of(usuarioLogado));
+        }
+
+        // 📌 Atualiza data de modificação
+        pasta.setDataAtualizacao(LocalDateTime.now());
+
+        return pastaRepository.save(pasta);
+    }
+
 
     private void atualizarCaminhoRecursivo(Pasta pasta, Path novoCaminho) {
         // Atualiza subpastas
@@ -693,21 +785,40 @@ public class PastaService {
 
 
 
-    /**
-     * Valida se o usuário logado tem permissão para criar a pasta.
-     */
-    private void validarPermissaoCriacao(Usuario usuario, Pasta pastaPai) {
-        if (usuario.isAdmin()) return; // Admin sempre pode
+    private void validarPermissaoCriacao(Usuario usuario, Pasta pastaPai) throws AccessDeniedException {
+        logger.debug("validarPermissaoCriacao: usuarioId={}, pastaPaiId={}",
+                usuario != null ? usuario.getId() : null,
+                pastaPai != null ? pastaPai.getId() : null);
 
-        // Se não for admin, deve existir pastaPai
+        if (usuario == null) {
+            throw new AccessDeniedException("Usuário não autenticado.");
+        }
+
+        // Admin sempre pode
+        if (Boolean.TRUE.equals(usuario.isAdmin())) {
+            logger.debug("Usuário é admin — permissão concedida.");
+            return;
+        }
+
+        // Se não for admin, não pode criar na raiz (pastaPai == null)
         if (pastaPai == null) {
-            throw new SecurityException("Gerentes devem criar pastas dentro de uma pasta existente.");
+            logger.warn("Usuário {} tentou criar pasta raiz sem ser admin", usuario.getUsername());
+            throw new AccessDeniedException("Gerentes devem criar pastas dentro de uma pasta existente.");
         }
 
-        // Verifica se o gerente tem permissão na pastaPai
-        if (!pastaPai.getUsuariosComPermissao().contains(usuario)) {
-            throw new SecurityException("Você não tem permissão para criar pastas neste local.");
+        // Verifica permissões comparando pelo ID (mais robusto)
+        boolean temPermissao = false;
+        if (pastaPai.getUsuariosComPermissao() != null) {
+            temPermissao = pastaPai.getUsuariosComPermissao().stream()
+                    .anyMatch(u -> u != null && u.getId() != null && u.getId().equals(usuario.getId()));
         }
+
+        if (!temPermissao) {
+            logger.warn("Usuário {} não tem permissão na pastaPai id={}", usuario.getUsername(), pastaPai.getId());
+            throw new AccessDeniedException("Você não tem permissão para criar pastas neste local.");
+        }
+
+        logger.debug("Permissão validada: usuário {} pode criar na pasta {}", usuario.getUsername(), pastaPai.getId());
     }
 
 

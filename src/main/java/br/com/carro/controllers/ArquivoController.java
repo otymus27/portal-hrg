@@ -81,21 +81,20 @@ public class ArquivoController {
     /**
      * RF-018 – Excluir Arquivo
      */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
-    public ResponseEntity<?> excluirArquivo(@PathVariable Long id,Authentication authentication) throws IOException {
+    @DeleteMapping("/arquivos/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
+    public ResponseEntity<Void> excluirArquivo(@PathVariable Long id, Authentication authentication) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             arquivoService.excluirArquivo(id, usuarioLogado);
-            return ResponseEntity.ok("Arquivo excluído com sucesso.");
-        }catch (
-                EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
-            logger.error("Erro inesperado ao excluir pasta", e);
-            return ResponseEntity.internalServerError().body("Erro ao excluir a pasta.");
+            logger.error("Erro inesperado ao excluir arquivo", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 

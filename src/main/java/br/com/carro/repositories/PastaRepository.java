@@ -51,4 +51,5 @@ public interface PastaRepository extends JpaRepository<Pasta, Long> {
 
     Page<Pasta> findAllBy(Pageable pageable);
 
+    List<Pasta> findByPastaPaiIsNullAndUsuariosComPermissaoContains(Usuario usuarioLogado);
 }

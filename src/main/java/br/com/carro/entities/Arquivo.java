@@ -53,6 +53,4 @@ public class Arquivo {
     @JsonIgnore
     private Usuario criadoPor;
 
-    @Column(name = "is_publico")
-    private boolean publico;
 }

@@ -44,37 +44,40 @@ public class PastaController {
         this.authService = authService;
     }
 
+    // ✅ ENDPOINT 01 - Controller para criar pasta raiz ou subpastas
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<?> criarPasta(
-            @RequestBody @Valid PastaRequestDTO pastaDTO,
-            Authentication authentication
-    ) {
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<?> criarPasta(@RequestBody @Valid PastaRequestDTO pastaDTO,
+                                        Authentication authentication) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             Pasta novaPasta = pastaService.criarPasta(pastaDTO, usuarioLogado);
             return ResponseEntity.status(HttpStatus.CREATED).body(PastaDTO.fromEntity(novaPasta));
-
-        } catch (IllegalArgumentException | jakarta.persistence.EntityNotFoundException e) {
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             logger.warn("Erro ao criar pasta: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
-
+        } catch (AccessDeniedException | SecurityException e) {
+            logger.warn("Acesso negado ao criar pasta");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (Exception e) {
             logger.error("Erro inesperado ao criar pasta", e);
             return ResponseEntity.internalServerError().body("Erro ao criar a pasta.");
         }
     }
 
-    //ENDPOINT 01 - Lista só as pastas principais ou raiz
+
+    // ✅ ENDPOINT 02 - Lista só as pastas principais ou raiz
     @GetMapping("/raiz")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PastaDTO>> listarPastasRaiz(Authentication authentication) throws AccessDeniedException {
         Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
         List<Pasta> pastas = pastaService.listarPastasRaiz(usuarioLogado);
         return ResponseEntity.ok(pastas.stream().map(PastaDTO::fromEntity).toList());
     }
 
+    // ✅ ENDPOINT 03 - Lista toda hierarquia de pastas
     @GetMapping("/arvore")
-    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE','BASIC')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getArvorePastas(
             Authentication authentication,
             @RequestBody(required = false) PastaFilterDTO filtro
@@ -89,23 +92,42 @@ public class PastaController {
         }
     }
 
-// ENDPOINT 02- Método para busca de pastas e arquivos por id
+    // ✅ ENDPOINT 04 - Método para busca de pastas e arquivos por id
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<PastaCompletaDTO> getPastaPorId(
-            @PathVariable Long id,
-            Authentication authentication,
-            @ModelAttribute PastaFilterDTO filtro) {
+    public ResponseEntity<?> getPastaPorId(@PathVariable Long id,
+                                           Authentication authentication,
+                                           @ModelAttribute PastaFilterDTO filtro) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             PastaCompletaDTO pasta = pastaService.getPastaCompletaPorId(id, usuarioLogado, filtro);
             return ResponseEntity.ok(pasta);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            logger.warn("Erro ao buscar pasta por id {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (SecurityException e) {
-            return ResponseEntity.status(403).build();
+            logger.warn("Acesso negado ao buscar pasta por id {}", id);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Erro inesperado ao buscar pasta por id {}", id, e);
+            return ResponseEntity.internalServerError().body("Erro ao buscar a pasta.");
         }
     }
+
+    // ENDPOINT 07 - Lista todas as pastas visíveis para o usuário logado
+    @GetMapping("/subpastas")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE','BASIC')")
+    public ResponseEntity<List<PastaCompletaDTO>> listarPastasPorUsuario(
+            Authentication authentication,
+            @ModelAttribute PastaFilterDTO filtro
+    ) {
+        Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+        List<PastaCompletaDTO> pastas = pastaService.listarPastasPorUsuario(usuarioLogado, filtro);
+        return ResponseEntity.ok(pastas);
+    }
+
+
+
 
 
     /**
@@ -117,25 +139,53 @@ public class PastaController {
 
     */
 
-
+    // ✅ ENDPOINT 05 - Exclusão de pastas por id
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
     public ResponseEntity<?> excluirPasta(@PathVariable Long id, Authentication authentication) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             pastaService.excluirPasta(id, usuarioLogado);
-            return ResponseEntity.ok("Pasta excluída com sucesso.");
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            logger.warn("Erro ao excluir pasta: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (AccessDeniedException e) {
+            logger.warn("Acesso negado para excluir pasta");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (Exception e) {
             logger.error("Erro inesperado ao excluir pasta", e);
-            return ResponseEntity.internalServerError().body("Erro ao excluir a pasta.");
+            return ResponseEntity.internalServerError().body("Erro ao atualizar a pasta.");
         }
     }
 
-/**   Respeita permissões (ADMIN ou usuários com acesso à pasta).
+    // ✅ ENDPOINT 06 - Atualizar campos de pastas por id
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<?> atualizarPasta(
+            @PathVariable Long id,
+            @RequestBody PastaUpdateDTO pastaDTO,
+            Authentication authentication
+    ) {
+        try {
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            Pasta pastaAtualizada = pastaService.atualizarPasta(id, pastaDTO, usuarioLogado);
+            return ResponseEntity.ok(PastaDTO.fromEntity(pastaAtualizada));
+
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            logger.warn("Erro ao atualizar pasta: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (AccessDeniedException e) {
+            logger.warn("Acesso negado ao atualizar pasta");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Erro inesperado ao atualizar pasta", e);
+            return ResponseEntity.internalServerError().body("Erro ao atualizar a pasta.");
+        }
+    }
+
+
+    /**   Respeita permissões (ADMIN ou usuários com acesso à pasta).
 //    Atualiza filesystem e caminhos no banco.
 //    Atualiza subpastas e arquivos recursivamente.
 //    Garante que não haja nomes duplicados na mesma pasta.
