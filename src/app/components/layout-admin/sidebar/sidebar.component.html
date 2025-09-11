@@ -52,6 +52,44 @@
       </ul>
     </li>
 
+        <!-- Aqui vai exibir o menu para o perfl de gerente e basic -->
+    <li class="nav-item" *ngIf="isGerente || isBasic">
+      <a class="nav-link" (click)="toggleSubmenu('permissoes')">
+        <i class="bi bi-bookmark"></i>
+        <span>Permissoes</span>
+        <i
+          class="bi bi-chevron-down submenu-icon"
+          [class.rotated]="showPermissoesSubmenu"
+        ></i>
+      </a>
+      <ul class="submenu" *ngIf="showPermissoesSubmenu">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/permissoes/consulta"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <i class="bi bi-list-ul"></i>
+            <span>Consulta</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            routerLink="/admin/permissoes/gerenciar"
+            routerLinkActive="active"
+          >
+            <i class="bi bi-plus-circle"></i>
+            <span>Gerenciar</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+
+    
+
     <!-- Aqui vai exibir o menu só para o perfil admin -->
     <li class="nav-item" *ngIf="isAdmin()">
       <a class="nav-link" (click)="toggleSubmenu('usuarios')">

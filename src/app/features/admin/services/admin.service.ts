@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { Usuario } from '../../../models/usuario';
 
 export interface Paginacao<T> {
   content: T[];
@@ -13,8 +14,12 @@ export interface Paginacao<T> {
 export interface PastaAdmin {
   id: number;
   nomePasta: string;
+  caminhoCompleto: string; // Adicionado para resolver o erro
+  dataCriacao: Date; // Adicionado para resolver o erro
+  criadoPor: any; // Adicionado para resolver o erro (tipo `any` ou tipo `Usuario` se aplicável)
   subPastas?: PastaAdmin[];
   arquivos?: ArquivoAdmin[];
+  usuariosComPermissao?: Usuario[];
 }
 
 export interface ArquivoAdmin {
@@ -44,6 +49,12 @@ export interface PastaCompletaDTO {
 export interface PastaExcluirDTO {
   idsPastas: number[];
   excluirConteudo: boolean;
+}
+
+export interface PastaPermissaoAcaoDTO {
+  pastaId: number;
+  adicionarUsuariosIds: number[];
+  removerUsuariosIds: number[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -183,7 +194,20 @@ export class AdminService {
     );
   }
 
-
+  // ✅ Atualizar permissões de pasta
+  atualizarPermissoesAcao(dto: PastaPermissaoAcaoDTO): Observable<string> {
+    // Adiciona a opção responseType: 'text'
+    // para instruir o Angular a não tentar parsear a resposta como JSON.
+    return this.http.post(
+      `${this.apiUrlAdminPastas}/permissao/acao`,
+      dto,
+      { responseType: 'text' }
+    );
+  }
+  // ---------------- Novo método: listar todos usuários ----------------
+  listarUsuarios(): Observable<Usuario[]> {
+    return this.http.get<Usuario[]>('/api/usuarios'); // ajuste se seu endpoint for diferente
+  }
 
 
 }

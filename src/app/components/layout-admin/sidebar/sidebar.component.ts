@@ -17,6 +17,7 @@ export class SidebarComponent {
   showPastasSubmenu = false;
   showMarcasSubmenu = false;
   showUsuariosSubmenu = false;
+  showPermissoesSubmenu = false;
 
   toggle() {
     this.isCollapsed = !this.isCollapsed;
@@ -27,19 +28,25 @@ export class SidebarComponent {
       this.showPastasSubmenu = !this.showPastasSubmenu;
       this.showMarcasSubmenu = false;
       this.showUsuariosSubmenu = false;
+      this.showPermissoesSubmenu = false;
     } else if (submenu === 'marcas') {
       this.showMarcasSubmenu = !this.showMarcasSubmenu;
       this.showPastasSubmenu = false;
       this.showUsuariosSubmenu = false;
+      this.showPermissoesSubmenu = false;
     } else if (submenu === 'usuarios') {
       this.showUsuariosSubmenu = !this.showUsuariosSubmenu;
       this.showMarcasSubmenu = false;
+      this.showPastasSubmenu = false;
+      this.showPermissoesSubmenu = false;
     }
   }
 
   hideAllSubmenus() {
     this.showPastasSubmenu = false;
     this.showMarcasSubmenu = false;
+    this.showUsuariosSubmenu = false;
+    this.showPermissoesSubmenu = false;
   }
 
   // ✅ Método para verificar se o usuário é ADMIN

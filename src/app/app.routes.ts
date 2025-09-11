@@ -12,6 +12,7 @@ import { ExplorerComponent } from './features/public/pages/explorer/explorer.com
 // Importa o novo componente
 import { AdminExplorerComponent } from './features/admin/pages/admin-explorer/admin-explorer.component';
 
+
 export const routes: Routes = [
   // --- Rotas Públicas ---
   // Rota raiz que redireciona para a página inicial pública
@@ -44,6 +45,7 @@ export const routes: Routes = [
       // Rotas com submenus para Marcas
 
       // Rotas com submenus para Pastas
+      
 
       {
         path: 'pastas',

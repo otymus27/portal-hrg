@@ -22,6 +22,7 @@ import { catchError } from 'rxjs/operators';
   styleUrls: ['./admin-explorer.component.scss'],
 })
 export class AdminExplorerComponent implements OnInit {
+  // Conteúdo
   pastas: PastaAdmin[] = [];
   arquivos: ArquivoAdmin[] = [];
   breadcrumb: PastaAdmin[] = [];
@@ -33,6 +34,7 @@ export class AdminExplorerComponent implements OnInit {
   modalUploadAberto = false;
   modalExcluirAberto = false;
   modalExcluirSelecionadosAberto = false;
+  modalPermissaoAberto = false;
 
   // CRUD
   novoNomePasta = '';
@@ -43,6 +45,17 @@ export class AdminExplorerComponent implements OnInit {
   // Usuários
   usuarios: Usuario[] = [];
   usuariosSelecionados: Usuario[] = [];
+
+  // Pasta para permissões
+  pastaParaPermissao: PastaAdmin = {
+    id: 0,
+    nomePasta: '',
+    caminhoCompleto: '',
+    dataCriacao: new Date(),
+    criadoPor: null,
+    subPastas: [],
+    usuariosComPermissao: [],
+  };
 
   // Seleção
   itensSelecionados: (PastaAdmin | ArquivoAdmin)[] = [];
@@ -187,7 +200,6 @@ export class AdminExplorerComponent implements OnInit {
   onArquivosSelecionados(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input?.files) {
-      // Acumula os arquivos selecionados, sem duplicatas pelo name + size
       const novosArquivos = Array.from(input.files).filter(
         (novo) =>
           !this.arquivosParaUpload.some(
@@ -205,8 +217,7 @@ export class AdminExplorerComponent implements OnInit {
 
   uploadArquivos(): void {
     const pastaAtual = this.obterPastaAtual();
-    if (!pastaAtual)
-      return this.handleError('Selecione uma pasta antes do upload');
+    if (!pastaAtual) return this.handleError('Selecione uma pasta antes do upload');
     if (!this.arquivosParaUpload.length) return;
 
     this.loading = true;
@@ -246,6 +257,10 @@ export class AdminExplorerComponent implements OnInit {
           (i) => i !== item
         ))
       : this.itensSelecionados.push(item);
+  }
+
+  get todosItens(): (PastaAdmin | ArquivoAdmin)[] {
+    return [...this.pastas, ...this.arquivos];
   }
 
   marcarTodos(): void {
@@ -368,227 +383,58 @@ export class AdminExplorerComponent implements OnInit {
       : this.usuariosSelecionados.splice(idx, 1);
   }
 
-
-  // ---Fazer copia de arquivos para outra pasta
-  // ---------------- Copiar Arquivo ----------------
-// Variáveis novas
-modalCopiarAberto = false;
-arquivoParaCopiar: ArquivoAdmin | null = null;
-pastaDestinoSelecionada: PastaAdmin | null = null;
-pastasDisponiveisParaCopiar: PastaAdmin[] = [];
-
-// ---------------- Modal Copiar Arquivo ----------------
-abrirModalCopiar(arquivo: ArquivoAdmin): void {
-  this.arquivoParaCopiar = arquivo;
-  this.modalCopiarAberto = true;
-  this.pastaDestinoSelecionada = null;
-  this.loading = true;
-
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo: ConteudoPasta) => {
-      // Carregamos apenas as pastas (sem arquivos)
-      this.pastasDisponiveisParaCopiar = conteudo.pastas;
-      this.loading = false;
-    },
-    error: (err) => {
-      this.handleError('Erro ao carregar pastas para copiar', err);
-      this.loading = false;
-    }
-  });
-}
-
-// Fechar modal de copiar arquivo
-fecharModalCopiar(): void {
-  this.modalCopiarAberto = false;
-  this.arquivoParaCopiar = null;
-  this.pastaDestinoSelecionada = null;
-  this.pastasDisponiveisParaCopiar = [];
-}
-
-// Confirmar cópia
-copiarArquivo(): void {
-  if (!this.arquivoParaCopiar || !this.pastaDestinoSelecionada) return;
-
-  this.loading = true;
-
-  this.adminService
-    .copiarArquivo(this.arquivoParaCopiar.id, this.pastaDestinoSelecionada.id)
-    .subscribe({
-      next: (arquivoCopiado) => {
-        this.recarregarConteudo();
-        this.fecharModalCopiar();
-        this.loading = false;
-      },
-      error: (err) =>
-        this.handleError(
-          `Erro ao copiar arquivo ${this.arquivoParaCopiar?.nome}`,
-          err
-        ),
-    });
-}
-
-
-// ---------------- Copiar Pasta ----------------
-modalCopiarPastaAberto = false;
-pastaParaCopiar: PastaAdmin | null = null;
-pastaDestinoSelec: PastaAdmin | null = null;
-
-abrirModalCopiarPasta(pasta: PastaAdmin): void {
-  this.pastaParaCopiar = pasta;
-  this.pastaDestinoSelec = null;
-  this.modalCopiarPastaAberto = true;
-
-  // Carregar pastas disponíveis para seleção como destino
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo) => {
-      // Exclui a pasta que está sendo copiada da lista de destinos possíveis
-      this.pastasDisponiveisParaCopiar = conteudo.pastas.filter(p => p.id !== pasta.id);
-    },
-    error: (err) => this.handleError('Erro ao carregar pastas para destino', err)
-  });
-}
-
-fecharModalCopiarPasta(): void {
-  this.modalCopiarPastaAberto = false;
-  this.pastaParaCopiar = null;
-  this.pastaDestinoSelec = null;
-  this.pastasDisponiveisParaCopiar = [];
-}
-
-copiarPasta(): void {
-    if (!this.pastaParaCopiar) return;
-
-    const destinoId = this.pastaDestinoSelecionada ? this.pastaDestinoSelecionada.id.toString() : undefined;
-
-    this.loading = true;
-    this.adminService.copiarPasta(this.pastaParaCopiar.id.toString(), destinoId).subscribe({
-      next: (novaPasta) => {
-        // Atualiza conteúdo
-        this.recarregarConteudo();
-
-        // Fecha modal
-        this.fecharModalCopiarPasta();
-
-        // Remove loading
-        this.loading = false;
-        
-      },
-      error: (err) => this.handleError('Erro ao copiar pasta', err)
-    });
+  // ---------------- Permissões ----------------
+  abrirModalPermissao(pasta: PastaAdmin): void {
+    this.pastaParaPermissao = pasta;
+    this.usuariosSelecionados = [...(pasta.usuariosComPermissao || [])];
+    this.modalPermissaoAberto = true;
   }
 
-  // -- Mover ou recortar pasta --
-  // ---------------- Mover Pasta ----------------
-modalMoverPastaAberto = false;
-pastaParaMover: PastaAdmin | null = null;
-pastaDestinoMover: PastaAdmin | null = null;
-pastasDisponiveisParaMover: PastaAdmin[] = [];
+  fecharModalPermissao(): void {
+    this.modalPermissaoAberto = false;
+    this.pastaParaPermissao = {
+      id: 0,
+      nomePasta: '',
+      caminhoCompleto: '',
+      dataCriacao: new Date(),
+      criadoPor: null,
+      subPastas: [],
+      usuariosComPermissao: [],
+    };
+    this.usuariosSelecionados = [];
+  }
 
-// Abrir modal de mover pasta
-abrirModalMoverPasta(pasta: PastaAdmin): void {
-  this.pastaParaMover = pasta;
-  this.pastaDestinoMover = null;
-  this.modalMoverPastaAberto = true;
+  atualizarPermissoes(): void {
+  if (!this.pastaParaPermissao) {
+    return;
+  }
+
+  // IDs dos usuários selecionados no modal agora
+  const adicionarIds = this.usuariosSelecionados.map(u => u.id);
+
+  // IDs dos usuários que a pasta já tinha antes da edição
+  const usuariosAtuaisDaPastaIds = this.pastaParaPermissao.usuariosComPermissao?.map(u => u.id) || [];
+
+  // IDs dos usuários que estavam na pasta, mas não estão mais selecionados no modal
+  const removerIds = usuariosAtuaisDaPastaIds.filter(id => !adicionarIds.includes(id));
+
+  const dto = {
+    pastaId: this.pastaParaPermissao.id,
+    adicionarUsuariosIds: adicionarIds,
+    removerUsuariosIds: removerIds,
+  };
 
   this.loading = true;
-  // Carregar pastas disponíveis como destino (exceto a própria pasta e suas subpastas)
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo: ConteudoPasta) => {
-      // Filtra a pasta que está sendo movida
-      this.pastasDisponiveisParaMover = conteudo.pastas.filter(p => p.id !== pasta.id);
+  this.adminService.atualizarPermissoesAcao(dto).subscribe({
+    next: () => {
+      // Recarregar o conteúdo para refletir as permissões atualizadas
+      this.recarregarConteudo(); 
+      this.fecharModalPermissao();
       this.loading = false;
     },
-    error: (err) => {
-      this.handleError('Erro ao carregar pastas para mover', err);
-      this.loading = false;
-    }
+    error: (err) => this.handleError('Erro ao atualizar permissões', err),
   });
 }
-
-// Fechar modal de mover pasta
-fecharModalMoverPasta(): void {
-  this.modalMoverPastaAberto = false;
-  this.pastaParaMover = null;
-  this.pastaDestinoMover = null;
-  this.pastasDisponiveisParaMover = [];
-}
-
-// Confirmar mover pasta
-moverPasta(): void {
-  if (!this.pastaParaMover) return;
-
-  const destinoId = this.pastaDestinoMover ? this.pastaDestinoMover.id : undefined;
-  this.loading = true;
-
-  this.adminService.moverPasta(this.pastaParaMover.id, destinoId).subscribe({
-    next: (pastaMovida) => {
-      this.recarregarConteudo();
-      this.fecharModalMoverPasta();
-      this.loading = false;
-    },
-    error: (err) => this.handleError('Erro ao mover pasta', err),
-  });
-}
-
-// ---------------- Mover Arquivo ----------------
-modalMoverArquivoAberto = false;
-arquivoParaMover: ArquivoAdmin | null = null;
-pastaDestinoArquivo: PastaAdmin | null = null;
-
-abrirModalMoverArquivo(arquivo: ArquivoAdmin): void {
-  this.arquivoParaMover = arquivo;
-  this.pastaDestinoArquivo = null;
-  this.modalMoverArquivoAberto = true;
-  this.loading = true;
-
-  // Carrega as pastas disponíveis para destino
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo: ConteudoPasta) => {
-      this.pastasDisponiveisParaMover = conteudo.pastas;
-      this.loading = false;
-    },
-    error: (err) => {
-      this.handleError('Erro ao carregar pastas para mover', err);
-      this.loading = false;
-    }
-  });
-}
-
-fecharModalMoverArquivo(): void {
-  this.modalMoverArquivoAberto = false;
-  this.arquivoParaMover = null;
-  this.pastaDestinoArquivo = null;
-  this.pastasDisponiveisParaMover = [];
-}
-
-moverArquivo(): void {
-  if (!this.arquivoParaMover || !this.pastaDestinoArquivo) return;
-
-  this.loading = true;
-
-  this.adminService
-    .moverArquivo(this.arquivoParaMover.id, this.pastaDestinoArquivo.id)
-    .subscribe({
-      next: (arquivoMovido) => {
-        this.recarregarConteudo();
-        this.fecharModalMoverArquivo();
-        this.loading = false;
-      },
-      error: (err) =>
-        this.handleError(
-          `Erro ao mover arquivo ${this.arquivoParaMover?.nome}`,
-          err
-        ),
-    });
-}
-
-
-
-
-
-
-
-
 
   // ---------------- Helpers ----------------
   isFolder(item: PastaAdmin | ArquivoAdmin | null): boolean {
@@ -603,12 +449,12 @@ moverArquivo(): void {
     return item ? (this.isPasta(item) ? item.nomePasta : item.nome) : '';
   }
 
-  get todosItens(): (PastaAdmin | ArquivoAdmin)[] {
-    return [...this.pastas, ...this.arquivos];
-  }
-
   private handleError(msg: string, err?: any): void {
     console.error(msg, err);
     this.loading = false;
   }
+
+  public isUsuarioSelecionado(usuario: Usuario): boolean {
+  return this.usuariosSelecionados.some(u => u.id === usuario.id);
+}
 }
