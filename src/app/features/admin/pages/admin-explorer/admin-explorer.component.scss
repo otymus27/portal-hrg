@@ -1,8 +1,18 @@
-.container {
-  max-width: 900px;
-  margin: 20px auto;
+/* Estilos para o componente */
+.lista-scrollable {
+  max-height: 500px; /* altura da lista rolável */
+  overflow-y: auto;
 }
 
+/* Cabeçalho da tabela fixo dentro da lista rolável */
+.lista-scrollable thead th {
+  position: sticky;
+  top: 0;
+  background-color: #fff; /* mantém a cor do cabeçalho */
+  z-index: 2;
+}
+
+/* Estilos para elementos internos */
 .breadcrumb-separator {
   user-select: none;
 }
@@ -12,13 +22,14 @@
   cursor: pointer;
 }
 
+/* Estilos de modais (sem alterações) */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,6 +41,9 @@
   padding: 20px;
   border-radius: 10px;
   min-width: 300px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-actions {
@@ -38,5 +52,12 @@
 }
 
 .modal-custom.confirmacao {
-  border: 2px solid #dc3545; // vermelho
+  border: 2px solid #dc3545;
+}
+
+.arquivos-carrinho {
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  list-style: none;
 }

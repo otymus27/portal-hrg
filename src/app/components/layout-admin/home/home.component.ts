@@ -6,10 +6,11 @@ import {
   DashboardMetrics,
   DashboardService,
 } from '../../../services/dashboard.service';
+import { AdminExplorerComponent } from "../../../features/admin/pages/admin-explorer/admin-explorer.component";
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AdminExplorerComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })
