@@ -816,6 +816,13 @@ public class PastaService {
     //----------------------------------------------------------------------//
 
 
+    // ✅ ENDPOINT  - Retornar lista de usuários para uma pasta por id
+    public List<Usuario> listarUsuariosPorPasta(Long pastaId,Usuario usuarioLogado) throws AccessDeniedException {
+        var pasta = pastaRepository.findById(pastaId)
+                .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada com id " + pastaId));
+
+        return new ArrayList<>(pasta.getUsuariosComPermissao());
+    }
 
 
 
@@ -854,6 +861,8 @@ public class PastaService {
 
         logger.debug("Permissão validada: usuário {} pode criar na pasta {}", usuario.getUsername(), pastaPai.getId());
     }
+
+
 
 
 }

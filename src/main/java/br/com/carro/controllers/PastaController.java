@@ -323,48 +323,6 @@ public class PastaController {
         }
     }
 
-//    // ✅ ENDPOINT  - Adicionar permissão a pastas para usuario
-//    @PutMapping("/{pastaId}/adicionar-usuario/{usuarioId}")
-//    @PreAuthorize("hasRole('ADMIN')")
-//    public ResponseEntity<?> adicionarUsuarioNaPasta(
-//            @PathVariable Long pastaId,
-//            @PathVariable Long usuarioId) {
-//
-//        try {
-//            Pasta pasta = pastaService.adicionarUsuario(pastaId, usuarioId);
-//            return ResponseEntity.ok(pasta);
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError()
-//                    .body("Erro inesperado: " + e.getMessage());
-//        }
-//    }
-//
-//    // ✅ ENDPOINT  - Remover permissão a pastas para usuario
-//    @PutMapping("/{pastaId}/remover-usuario/{usuarioId}")
-//    @PreAuthorize("hasRole('ADMIN')")
-//    public ResponseEntity<?> removerUsuarioDaPasta(
-//            @PathVariable Long pastaId,
-//            @PathVariable Long usuarioId) {
-//
-//        try {
-//            Pasta pasta = pastaService.removerUsuario(pastaId, usuarioId);
-//            return ResponseEntity.ok(pasta);
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError()
-//                    .body("Erro inesperado: " + e.getMessage());
-//        }
-//    }
-
-//    @PostMapping("/permissao")
-//    public ResponseEntity<Void> atualizarPermissoes(@RequestBody PastaPermissaoDTO dto) {
-//        pastaService.atualizarPermissoes(dto.pastaId(), dto.usuariosIds());
-//        return ResponseEntity.ok().build();
-//    }
-
     // ✅ ENDPOINT  - Adicionar e Remover permissão a pastas para usuario
     @PostMapping("/permissao/acao")
     public ResponseEntity<String> atualizarPermissoesAcao(@RequestBody PastaPermissaoAcaoDTO dto, Authentication authentication) throws AccessDeniedException {
@@ -389,6 +347,28 @@ public class PastaController {
         } catch (Exception e) {
             logger.error("Erro inesperado ao dar permissão pasta", e);
             return ResponseEntity.internalServerError().body("Erro inesperado no controller permissão.");
+        }
+    }
+
+    // ✅ ENDPOINT  - Retornar lista de usuários para uma pasta por id
+    @GetMapping("/{id}/usuarios")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<?> listarUsuariosPorPasta(@PathVariable Long id, Authentication authentication) {
+        try {
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            List<UsuarioResumoDTO> usuarios = pastaService.listarUsuariosPorPasta(id,usuarioLogado)
+                    .stream()
+                    .map(UsuarioResumoDTO::fromEntity)
+                    .toList();
+
+            return ResponseEntity.ok(usuarios);
+
+        } catch (EntityNotFoundException e) {
+            logger.warn("Pasta não encontrada: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Erro ao listar usuários da pasta", e);
+            return ResponseEntity.internalServerError().body("Erro interno ao buscar usuários.");
         }
     }
 
