@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -795,6 +794,24 @@ public class PastaService {
     }
 
 
+    // ✅ ENDPOINT  - Adicionar e Remover permissão a pastas para usuario
+    @Transactional
+    public void atualizarPermissoesAcao(Long pastaId, Set<Long> adicionarIds, Set<Long> removerIds, Usuario usuarioLogado)throws AccessDeniedException {
+        Pasta pasta = pastaRepository.findById(pastaId)
+                .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada"));
+
+        // Adicionar novos usuários
+        if (adicionarIds != null && !adicionarIds.isEmpty()) {
+            Set<Usuario> usuariosParaAdicionar = new HashSet<>(usuarioRepository.findAllById(adicionarIds));
+            pasta.getUsuariosComPermissao().addAll(usuariosParaAdicionar);
+        }
+
+        // Remover usuários
+        if (removerIds != null && !removerIds.isEmpty()) {
+            Set<Usuario> usuariosParaRemover = new HashSet<>(usuarioRepository.findAllById(removerIds));
+            pasta.getUsuariosComPermissao().removeAll(usuariosParaRemover);
+        }
+    }
 
     //----------------------------------------------------------------------//
 
