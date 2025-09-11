@@ -47,8 +47,11 @@ export class AdminExplorerComponent implements OnInit {
   itemParaExcluir: PastaAdmin | ArquivoAdmin | null = null;
 
   // Usuários
-  usuarios: Usuario[] = [];
-  usuariosSelecionados: Usuario[] = [];
+  usuarios: Usuario[] = []; // Lista de todos os usuários
+  usuariosSelecionados: Usuario[] = []; // Lista de usuários para permissão na nova pasta
+
+  // ✅ Novo: Variável para rastrear qual modal está ativo
+  modalAtivo: 'criarPasta' | 'permissao' | null = null;
 
   // Permissões
   usuariosComPermissao: UsuarioResumoDTO[] = [];
@@ -373,6 +376,8 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   // ---------------- Usuários ----------------
+  usuariosExcluidosIds: number[] = [];
+
   carregarUsuarios(): void {
     this.adminService.listarUsuarios().subscribe({
       next: (resposta: Paginacao<Usuario>) => {
@@ -396,21 +401,37 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   // ---------------- Permissões ----------------
-  abrirModalSelecionarUsuario(): void {
+  // ✅ Novo: Método único para abrir o modal de seleção de usuário
+  abrirModalSelecionarUsuario(modal: 'criarPasta' | 'permissao') {
+    this.modalAtivo = modal;
+    // Define os usuários que já foram selecionados para serem excluídos da lista
+    this.usuariosExcluidosIds =
+      modal === 'criarPasta'
+        ? this.usuariosSelecionados.map((u) => u.id)
+        : this.usuariosComPermissao.map((u) => u.id);
+
     this.modalSelecionarUsuarioAberto = true;
   }
 
-  onUsuarioSelecionado(usuario: Usuario | null): void {
-    if (usuario) {
-      this.adicionarUsuarioPermissao(usuario);
+  // ✅ Refatore o método para aceitar "Usuario" ou "null"
+onUsuarioSelecionado(usuario: Usuario | null) {
+  // Adiciona a verificação de nulo
+  if (usuario) {
+    if (this.modalAtivo === 'criarPasta') {
+      this.usuariosSelecionados.push(usuario);
+    } else if (this.modalAtivo === 'permissao') {
+      this.usuariosComPermissao.push(usuario);
     }
-    this.modalSelecionarUsuarioAberto = false;
   }
+
+  this.modalSelecionarUsuarioAberto = false;
+  this.modalAtivo = null;
+}
 
   abrirModalPermissao(pasta: PastaAdmin): void {
     this.pastaParaPermissao = pasta;
     this.loading = true;
-  
+
     this.adminService.listarUsuariosPorPasta(pasta.id).subscribe({
       // ✅ Corrigido: adicionado o tipo `UsuarioResumoDTO[]` ao parâmetro
       next: (usuariosPermitidos: UsuarioResumoDTO[]) => {
@@ -425,6 +446,11 @@ export class AdminExplorerComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+   // ✅ Método para remover um usuário da lista de selecionados
+   removerUsuarioSelecionado(usuario: Usuario) {
+    this.usuariosSelecionados = this.usuariosSelecionados.filter(u => u.id !== usuario.id);
   }
 
   adicionarUsuarioPermissao(usuario: Usuario): void {
@@ -456,7 +482,9 @@ export class AdminExplorerComponent implements OnInit {
     }
 
     const idsAtuais = new Set(this.usuariosComPermissao.map((u) => u.id));
-    const idsIniciais = new Set(this.usuariosIniciaisComPermissao.map((u) => u.id));
+    const idsIniciais = new Set(
+      this.usuariosIniciaisComPermissao.map((u) => u.id)
+    );
 
     const adicionarUsuariosIds = this.usuariosComPermissao
       .filter((u) => !idsIniciais.has(u.id))

@@ -22,42 +22,68 @@
   cursor: pointer;
 }
 
-/* Estilos de modais (sem alterações) */
+/* Estilos unificados para todos os modais */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1050;
 }
 
 .modal-custom {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  min-width: 300px;
-  max-width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  animation: fadeIn 0.3s ease-in-out; /* Adiciona uma animação */
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Título e seções */
+.modal-custom h3 {
+  font-weight: 600;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: #343a40;
+}
+
+/* Estilo para as listas */
+.list-group-scrollable {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.list-group-scrollable .list-group-item {
+  border: none;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.list-group-scrollable .list-group-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* Botões de ação */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-}
-
-.modal-custom.confirmacao {
-  border: 2px solid #dc3545;
-}
-
-.arquivos-carrinho {
-  border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  list-style: none;
+  gap: 1rem;
 }

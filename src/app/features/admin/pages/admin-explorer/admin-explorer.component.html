@@ -1,7 +1,9 @@
 <div class="explorer-container card shadow-sm">
-  <div class="card-body p-4">  
+  <div class="card-body p-4">
     <!-- Cabeçalho fixo -->
-    <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded mb-3">
+    <div
+      class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded mb-3"
+    >
       <h1>Explorador de Arquivos</h1>
       <div class="d-flex gap-2">
         <button
@@ -22,10 +24,19 @@
 
     <!-- Breadcrumb fixo -->
     <nav class="breadcrumb mt-3 mb-3">
-      <span class="breadcrumb-item text-primary" style="cursor: pointer" (click)="navegarPara(-1)">Raiz</span>
+      <span
+        class="breadcrumb-item text-primary"
+        style="cursor: pointer"
+        (click)="navegarPara(-1)"
+        >Raiz</span
+      >
       <ng-container *ngFor="let pasta of breadcrumb; let i = index">
         <span class="breadcrumb-separator mx-2">/</span>
-        <span class="breadcrumb-item text-primary" style="cursor: pointer" (click)="navegarPara(i)">
+        <span
+          class="breadcrumb-item text-primary"
+          style="cursor: pointer"
+          (click)="navegarPara(i)"
+        >
           {{ pasta.nomePasta }}
         </span>
       </ng-container>
@@ -63,8 +74,15 @@
             <th style="width: 40px">
               <input
                 type="checkbox"
-                [checked]="todosItens.length > 0 && itensSelecionados.length === todosItens.length"
-                (change)="itensSelecionados.length === todosItens.length ? desmarcarTodos() : marcarTodos()"
+                [checked]="
+                  todosItens.length > 0 &&
+                  itensSelecionados.length === todosItens.length
+                "
+                (change)="
+                  itensSelecionados.length === todosItens.length
+                    ? desmarcarTodos()
+                    : marcarTodos()
+                "
               />
             </th>
             <th>Nome</th>
@@ -81,7 +99,11 @@
                 (click)="$event.stopPropagation()"
               />
             </td>
-            <td class="text-primary fw-bold" style="cursor: pointer" (click)="abrirPasta(pasta)">
+            <td
+              class="text-primary fw-bold"
+              style="cursor: pointer"
+              (click)="abrirPasta(pasta)"
+            >
               📁 {{ pasta.nomePasta || "(Sem nome)" }}
             </td>
             <td class="text-end">
@@ -155,223 +177,240 @@
   </div>
 </div>
 
-   
+<!------------------- MODAIS------------->
+<div class="modal-backdrop" *ngIf="modalCriarPastaAberto">
+  <div class="modal-custom permissao-modal">
+    <h3>Criar Nova Pasta</h3>
+    <input
+      type="text"
+      [(ngModel)]="novoNomePasta"
+      placeholder="Nome da pasta"
+      class="form-control mb-3"
+    />
 
-    <div class="modal-backdrop" *ngIf="modalCriarPastaAberto">
-      <div class="modal-custom">
-        <h3>Criar Nova Pasta</h3>
-        <input
-          type="text"
-          [(ngModel)]="novoNomePasta"
-          placeholder="Nome da pasta"
-          class="form-control mb-2"
-        />
-        <label class="d-block mb-2">Selecionar usuários para permissões:</label>
-        <div class="form-check" *ngFor="let u of usuarios">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            [checked]="isUsuarioSelecionado(u)"
-            (change)="selecionarUsuario(u)"
-          />
-          <label class="form-check-label">{{ u.username }}</label>
-        </div>
-        <div class="modal-actions mt-3">
-          <button class="btn btn-primary me-2" (click)="criarPasta()">
-            Salvar
-          </button>
-          <button class="btn btn-secondary" (click)="fecharModalCriarPasta()">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-backdrop" *ngIf="modalRenomearAberto">
-      <div class="modal-custom">
-        <h3>Renomear {{ isPasta(itemParaRenomear!) ? "Pasta" : "Arquivo" }}</h3>
-        <input
-          type="text"
-          [(ngModel)]="novoNomeItem"
-          placeholder="Novo nome"
-          class="form-control mb-2"
-        />
-        <div class="modal-actions mt-3">
-          <button class="btn btn-primary me-2" (click)="renomearItem()">
-            Salvar
-          </button>
-          <button class="btn btn-secondary" (click)="fecharModalRenomear()">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-backdrop" *ngIf="modalUploadAberto">
-      <div class="modal-custom">
-        <h3>Upload de Arquivos</h3>
-        <input
-          type="file"
-          (change)="onArquivosSelecionados($event)"
-          class="form-control mb-3"
-          multiple
-        />
-        <div *ngIf="arquivosParaUpload.length > 0" class="mb-3">
-          <p>Arquivos para upload:</p>
+    <div class="d-flex justify-content-between gap-4">
+      <div class="w-50">
+        <h5>Usuários com Permissão</h5>
+        <div
+          class="permissoes-lista list-group"
+          style="max-height: 250px; overflow-y: auto"
+        >
           <div
-            class="list-group arquivos-carrinho"
-            style="max-height: 250px; overflow-y: auto"
+            *ngFor="let u of usuariosSelecionados"
+            class="list-group-item d-flex justify-content-between align-items-center"
           >
-            <div
-              *ngFor="let arquivo of arquivosParaUpload"
-              class="list-group-item d-flex justify-content-between align-items-center"
-            >
-              <div>
-                <strong>{{ arquivo.name }}</strong>
-                <small class="text-muted"
-                  >({{ arquivo.size | number }} bytes)</small
-                >
-              </div>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-danger"
-                (click)="removerArquivoSelecionado(arquivo)"
-              >
-                &times;
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
-          <button
-            class="btn btn-primary"
-            (click)="uploadArquivos()"
-            [disabled]="arquivosParaUpload.length === 0"
-          >
-            Upload
-          </button>
-          <button class="btn btn-secondary" (click)="fecharModalUpload()">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-backdrop" *ngIf="modalExcluirAberto">
-      <div class="modal-custom">
-        <h3>Confirmação de Exclusão</h3>
-        <p>
-          Tem certeza que deseja excluir
-          <strong>{{ getNomeItem(itemParaExcluir) }}</strong
-          >?
-        </p>
-        <div class="modal-actions mt-3">
-          <button class="btn btn-danger me-2" (click)="confirmarExclusao()">
-            Excluir
-          </button>
-          <button class="btn btn-secondary" (click)="fecharModalExcluir()">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-backdrop" *ngIf="modalExcluirSelecionadosAberto">
-      <div class="modal-custom">
-        <h3>Confirmação de Exclusão</h3>
-        <p>
-          Tem certeza que deseja excluir
-          <strong>{{ itensSelecionados.length }}</strong>
-          {{
-            itensSelecionados.length === 1
-              ? "item selecionado"
-              : "itens selecionados"
-          }}?
-        </p>
-        <ul class="list-group mb-3">
-          <li
-            *ngFor="let item of itensSelecionados"
-            class="list-group-item py-1"
-          >
-            {{ getNomeItem(item) }}
-          </li>
-        </ul>
-        <div class="modal-actions mt-3">
-          <button
-            class="btn btn-danger me-2"
-            (click)="confirmarExclusaoSelecionados()"
-          >
-            Excluir
-          </button>
-          <button
-            class="btn btn-secondary"
-            (click)="fecharModalExcluirSelecionados()"
-          >
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-backdrop" *ngIf="modalPermissaoAberto">
-      <div class="modal-custom permissao-modal">
-        <h3>Permissões para "{{ pastaParaPermissao?.nomePasta }}"</h3>
-        <div class="d-flex justify-content-between gap-4 mt-3">
-          <div class="w-50">
-            <h5>Usuários com Permissão</h5>
-            <div
-              class="permissoes-lista list-group"
-              style="max-height: 250px; overflow-y: auto"
-            >
-              <div
-                *ngFor="let u of usuariosComPermissao"
-                class="list-group-item d-flex justify-content-between align-items-center"
-              >
-                {{ u.username }}
-                <button
-                  class="btn btn-danger btn-sm"
-                  (click)="removerUsuarioPermissao(u)"
-                >
-                  <i class="bi bi-x"></i>
-                </button>
-              </div>
-              <div
-                *ngIf="usuariosComPermissao.length === 0"
-                class="text-muted text-center p-3"
-              >
-                Nenhum usuário com permissão.
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="w-50 d-flex flex-column align-items-center justify-content-center"
-          >
-            <h5>Adicionar Usuário</h5>
+            {{ u.username }}
             <button
-              class="btn btn-success mt-2"
-              (click)="abrirModalSelecionarUsuario()"
+              class="btn btn-danger btn-sm"
+              (click)="removerUsuarioSelecionado(u)"
             >
-              <i class="bi bi-person-plus me-2"></i>Selecionar
+              <i class="bi bi-x"></i>
             </button>
           </div>
+          <div
+            *ngIf="usuariosSelecionados.length === 0"
+            class="text-muted text-center p-3"
+          >
+            Nenhum usuário com permissão.
+          </div>
         </div>
+      </div>
 
-        <div class="modal-actions mt-3 text-end">
-          <button class="btn btn-primary me-2" (click)="atualizarPermissoes()">
-            Salvar
-          </button>
-          <button class="btn btn-secondary" (click)="fecharModalPermissao()">
-            Cancelar
+      <div
+        class="w-50 d-flex flex-column align-items-center justify-content-center"
+      >
+        <h5>Adicionar Usuário</h5>
+        <button
+          class="btn btn-success mt-2"
+          (click)="abrirModalSelecionarUsuario('criarPasta')"
+        >
+          <i class="bi bi-person-plus me-2"></i>Selecionar
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-actions mt-3 text-end">
+      <button
+        class="btn btn-primary me-2"
+        (click)="criarPasta()"
+        [disabled]="!novoNomePasta"
+      >
+        Salvar
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalCriarPasta()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="modalRenomearAberto">
+  <div class="modal-custom">
+    <h3>Renomear {{ isPasta(itemParaRenomear!) ? "Pasta" : "Arquivo" }}</h3>
+    <input
+      type="text"
+      [(ngModel)]="novoNomeItem"
+      placeholder="Novo nome"
+      class="form-control mb-4"
+    />
+    <div class="modal-actions">
+      <button class="btn btn-primary" (click)="renomearItem()">Salvar</button>
+      <button class="btn btn-secondary" (click)="fecharModalRenomear()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="modalUploadAberto">
+  <div class="modal-custom">
+    <h3>Upload de Arquivos</h3>
+    <input
+      type="file"
+      (change)="onArquivosSelecionados($event)"
+      class="form-control mb-4"
+      multiple
+    />
+    <div *ngIf="arquivosParaUpload.length > 0" class="mb-4">
+      <p>Arquivos para upload:</p>
+      <div class="list-group-scrollable">
+        <div
+          *ngFor="let arquivo of arquivosParaUpload"
+          class="list-group-item d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <strong>{{ arquivo.name }}</strong>
+            <small class="text-muted"
+              >({{ arquivo.size | number }} bytes)</small
+            >
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger rounded-circle"
+            (click)="removerArquivoSelecionado(arquivo)"
+          >
+            <i class="bi bi-x"></i>
           </button>
         </div>
       </div>
     </div>
+    <div class="modal-actions">
+      <button
+        class="btn btn-primary"
+        (click)="uploadArquivos()"
+        [disabled]="arquivosParaUpload.length === 0"
+      >
+        Upload
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalUpload()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
 
+<div class="modal-backdrop" *ngIf="modalExcluirAberto">
+  <div class="modal-custom">
+    <h3>Confirmação de Exclusão</h3>
+    <p>
+      Tem certeza que deseja excluir
+      <strong>{{ getNomeItem(itemParaExcluir) }}</strong
+      >?
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" (click)="confirmarExclusao()">
+        Excluir
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalExcluir()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
 
-    <app-modal-usuario
-      *ngIf="modalSelecionarUsuarioAberto"
-      [usuariosExcluidosIds]="usuariosComPermissaoIds"
-      (usuarioSelecionado)="onUsuarioSelecionado($event)"
-    ></app-modal-usuario>
+<div class="modal-backdrop" *ngIf="modalExcluirSelecionadosAberto">
+  <div class="modal-custom">
+    <h3>Confirmação de Exclusão</h3>
+    <p>
+      Tem certeza que deseja excluir
+      <strong>{{ itensSelecionados.length }}</strong>
+      {{
+        itensSelecionados.length === 1
+          ? "item selecionado"
+          : "itens selecionados"
+      }}?
+    </p>
+    <ul class="list-group mb-4">
+      <li *ngFor="let item of itensSelecionados" class="list-group-item py-1">
+        {{ getNomeItem(item) }}
+      </li>
+    </ul>
+    <div class="modal-actions">
+      <button class="btn btn-danger" (click)="confirmarExclusaoSelecionados()">
+        Excluir
+      </button>
+      <button
+        class="btn btn-secondary"
+        (click)="fecharModalExcluirSelecionados()"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
 
+<div class="modal-backdrop" *ngIf="modalPermissaoAberto">
+  <div class="modal-custom">
+    <h3>Permissões para "{{ pastaParaPermissao?.nomePasta }}"</h3>
+    <div class="row g-4 mt-3">
+      <div class="col-md-6">
+        <h5>Usuários com Permissão</h5>
+        <div class="list-group-scrollable">
+          <div
+            *ngFor="let u of usuariosComPermissao"
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <span>{{ u.username }}</span>
+            <button
+              class="btn btn-danger btn-sm rounded-circle"
+              (click)="removerUsuarioPermissao(u)"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <div
+            *ngIf="usuariosComPermissao.length === 0"
+            class="text-muted text-center p-3"
+          >
+            Nenhum usuário com permissão.
+          </div>
+        </div>
+      </div>
+      <div
+        class="col-md-6 d-flex flex-column align-items-center justify-content-center"
+      >
+        <h5>Adicionar Usuário</h5>
+        <button
+          class="btn btn-success mt-2"
+          (click)="abrirModalSelecionarUsuario('permissao')"
+        >
+          <i class="bi bi-person-plus me-2"></i>Selecionar
+        </button>
+      </div>
+    </div>
+    <div class="modal-actions mt-4">
+      <button class="btn btn-primary" (click)="atualizarPermissoes()">
+        Salvar
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalPermissao()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-modal-usuario
+  *ngIf="modalSelecionarUsuarioAberto"
+  [usuariosExcluidosIds]="usuariosComPermissaoIds"
+  (usuarioSelecionado)="onUsuarioSelecionado($event)"
+></app-modal-usuario>
