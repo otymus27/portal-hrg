@@ -7,6 +7,7 @@ import {
   ArquivoAdmin,
   ConteudoPasta,
   PastaExcluirDTO,
+  UsuarioResumoDTO,
 } from '../../services/admin.service';
 import { UsuarioService } from '../../../../services/usuario.service';
 import { Usuario } from '../../../../models/usuario';
@@ -45,6 +46,12 @@ export class AdminExplorerComponent implements OnInit {
   // Usuários
   usuarios: Usuario[] = [];
   usuariosSelecionados: Usuario[] = [];
+
+  // Permissões
+  // Permissões
+  usuariosComPermissao: UsuarioResumoDTO[] = []; // <-- Tipo alterado
+  usuariosDisponiveis: Usuario[] = [];
+  private usuariosIniciaisComPermissao: UsuarioResumoDTO[] = []; // <-- Tipo alterado
 
   // Pasta para permissões
   pastaParaPermissao: PastaAdmin = {
@@ -217,7 +224,8 @@ export class AdminExplorerComponent implements OnInit {
 
   uploadArquivos(): void {
     const pastaAtual = this.obterPastaAtual();
-    if (!pastaAtual) return this.handleError('Selecione uma pasta antes do upload');
+    if (!pastaAtual)
+      return this.handleError('Selecione uma pasta antes do upload');
     if (!this.arquivosParaUpload.length) return;
 
     this.loading = true;
@@ -383,11 +391,91 @@ export class AdminExplorerComponent implements OnInit {
       : this.usuariosSelecionados.splice(idx, 1);
   }
 
+  public isUsuarioSelecionado(usuario: Usuario): boolean {
+    return this.usuariosSelecionados.some((u) => u.id === usuario.id);
+  }
+
   // ---------------- Permissões ----------------
   abrirModalPermissao(pasta: PastaAdmin): void {
+    this.loading = true;
     this.pastaParaPermissao = pasta;
-    this.usuariosSelecionados = [...(pasta.usuariosComPermissao || [])];
-    this.modalPermissaoAberto = true;
+
+    // ✅ Chamada ao novo método do service para obter a lista de usuários da pasta
+    this.adminService.listarUsuariosPorPasta(pasta.id).subscribe({
+      next: (usuariosPermitidos) => {
+        this.usuariosComPermissao = usuariosPermitidos;
+        // Cria uma cópia para a lógica de atualização
+        this.usuariosIniciaisComPermissao = [...usuariosPermitidos];
+
+        // Filtra a lista geral de usuários para encontrar os disponíveis
+        this.usuariosDisponiveis = this.usuarios.filter(
+          (u) => !this.usuariosComPermissao.some((p) => p.id === u.id)
+        );
+
+        // Abre o modal e finaliza o carregamento
+        this.modalPermissaoAberto = true;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.handleError('Erro ao carregar usuários da pasta', err);
+        this.loading = false;
+      },
+    });
+  }
+
+ // ✅ Método atualizado para receber UsuarioResumoDTO
+adicionarUsuarioPermissao(usuario: UsuarioResumoDTO): void {
+  // O filtro continua funcionando porque o tipo Usuario também tem a propriedade 'id'
+  this.usuariosComPermissao.push(usuario);
+  this.usuariosDisponiveis = this.usuariosDisponiveis.filter(
+    (u) => u.id !== usuario.id
+  );
+}
+
+  // ✅ Método atualizado para receber UsuarioResumoDTO
+removerUsuarioPermissao(usuario: UsuarioResumoDTO): void {
+  // O `u` aqui é do tipo Usuario[], o filtro ainda precisa da propriedade `id` para funcionar
+  // Por isso vamos procurar o usuário completo
+  const usuarioCompleto = this.usuarios.find(u => u.id === usuario.id);
+  if (usuarioCompleto) {
+      this.usuariosDisponiveis.push(usuarioCompleto);
+  }
+  
+  this.usuariosComPermissao = this.usuariosComPermissao.filter(
+    (u) => u.id !== usuario.id
+  );
+}
+
+  atualizarPermissoes(): void {
+    if (!this.pastaParaPermissao) {
+      return;
+    }
+
+    const adicionarUsuariosIds = this.usuariosComPermissao
+      .map((u) => u.id)
+      .filter(
+        (id) => !this.usuariosIniciaisComPermissao.some((u) => u.id === id)
+      );
+
+    const removerUsuariosIds = this.usuariosIniciaisComPermissao
+      .map((u) => u.id)
+      .filter((id) => !this.usuariosComPermissao.some((u) => u.id === id));
+
+    const dto = {
+      pastaId: this.pastaParaPermissao.id,
+      adicionarUsuariosIds: adicionarUsuariosIds,
+      removerUsuariosIds: removerUsuariosIds,
+    };
+
+    this.loading = true;
+    this.adminService.atualizarPermissoesAcao(dto).subscribe({
+      next: () => {
+        this.recarregarConteudo();
+        this.fecharModalPermissao();
+        this.loading = false;
+      },
+      error: (err) => this.handleError('Erro ao atualizar permissões', err),
+    });
   }
 
   fecharModalPermissao(): void {
@@ -401,40 +489,10 @@ export class AdminExplorerComponent implements OnInit {
       subPastas: [],
       usuariosComPermissao: [],
     };
-    this.usuariosSelecionados = [];
+    this.usuariosComPermissao = [];
+    this.usuariosDisponiveis = [];
+    this.usuariosIniciaisComPermissao = [];
   }
-
-  atualizarPermissoes(): void {
-  if (!this.pastaParaPermissao) {
-    return;
-  }
-
-  // IDs dos usuários selecionados no modal agora
-  const adicionarIds = this.usuariosSelecionados.map(u => u.id);
-
-  // IDs dos usuários que a pasta já tinha antes da edição
-  const usuariosAtuaisDaPastaIds = this.pastaParaPermissao.usuariosComPermissao?.map(u => u.id) || [];
-
-  // IDs dos usuários que estavam na pasta, mas não estão mais selecionados no modal
-  const removerIds = usuariosAtuaisDaPastaIds.filter(id => !adicionarIds.includes(id));
-
-  const dto = {
-    pastaId: this.pastaParaPermissao.id,
-    adicionarUsuariosIds: adicionarIds,
-    removerUsuariosIds: removerIds,
-  };
-
-  this.loading = true;
-  this.adminService.atualizarPermissoesAcao(dto).subscribe({
-    next: () => {
-      // Recarregar o conteúdo para refletir as permissões atualizadas
-      this.recarregarConteudo(); 
-      this.fecharModalPermissao();
-      this.loading = false;
-    },
-    error: (err) => this.handleError('Erro ao atualizar permissões', err),
-  });
-}
 
   // ---------------- Helpers ----------------
   isFolder(item: PastaAdmin | ArquivoAdmin | null): boolean {
@@ -453,8 +511,4 @@ export class AdminExplorerComponent implements OnInit {
     console.error(msg, err);
     this.loading = false;
   }
-
-  public isUsuarioSelecionado(usuario: Usuario): boolean {
-  return this.usuariosSelecionados.some(u => u.id === usuario.id);
-}
 }

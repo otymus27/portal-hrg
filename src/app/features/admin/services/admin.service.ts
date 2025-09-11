@@ -57,6 +57,12 @@ export interface PastaPermissaoAcaoDTO {
   removerUsuariosIds: number[];
 }
 
+// ✅ Interface para o DTO de resumo do usuário, conforme o seu endpoint
+export interface UsuarioResumoDTO {
+  id: number;
+  username: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly apiUrlAdminPastas = 'http://localhost:8082/api/pastas';
@@ -156,25 +162,34 @@ export class AdminService {
     );
   }
 
-   // ---------------- RF-020: Copiar arquivo ----------------
-  copiarArquivo(arquivoId: number, pastaDestinoId: number): Observable<ArquivoAdmin> {
+  // ---------------- RF-020: Copiar arquivo ----------------
+  copiarArquivo(
+    arquivoId: number,
+    pastaDestinoId: number
+  ): Observable<ArquivoAdmin> {
     const url = `${this.apiUrlAdminArquivos}/${arquivoId}/copiar/${pastaDestinoId}`;
     return this.http.post<ArquivoAdmin>(url, null);
   }
 
- /**
- * Copia uma pasta (opcionalmente para uma pasta de destino).
- * O backend espera o destino como request param 'destinoPastaId' (opcional).
- */
-  copiarPasta(id: string, destinoPastaId?: string | number): Observable<PastaAdmin> {
+  /**
+   * Copia uma pasta (opcionalmente para uma pasta de destino).
+   * O backend espera o destino como request param 'destinoPastaId' (opcional).
+   */
+  copiarPasta(
+    id: string,
+    destinoPastaId?: string | number
+  ): Observable<PastaAdmin> {
     let params = new HttpParams();
     if (destinoPastaId !== undefined && destinoPastaId !== null) {
       params = params.set('destinoPastaId', String(destinoPastaId));
     }
     // POST sem body (backend apenas usa path + query param)
-    return this.http.post<PastaAdmin>(`${this.apiUrlAdminPastas}/${id}/copiar`, null, { params });
+    return this.http.post<PastaAdmin>(
+      `${this.apiUrlAdminPastas}/${id}/copiar`,
+      null,
+      { params }
+    );
   }
-
 
   // --- Mover Pasta ---
   moverPasta(idPasta: number, novaPastaPaiId?: number): Observable<PastaAdmin> {
@@ -187,7 +202,10 @@ export class AdminService {
   }
 
   // RF-019: Mover arquivo
-  moverArquivo(arquivoId: number, pastaDestinoId: number): Observable<ArquivoAdmin> {
+  moverArquivo(
+    arquivoId: number,
+    pastaDestinoId: number
+  ): Observable<ArquivoAdmin> {
     return this.http.put<ArquivoAdmin>(
       `${this.apiUrlAdminArquivos}/${arquivoId}/mover/${pastaDestinoId}`,
       null // PUT sem corpo
@@ -198,16 +216,19 @@ export class AdminService {
   atualizarPermissoesAcao(dto: PastaPermissaoAcaoDTO): Observable<string> {
     // Adiciona a opção responseType: 'text'
     // para instruir o Angular a não tentar parsear a resposta como JSON.
-    return this.http.post(
-      `${this.apiUrlAdminPastas}/permissao/acao`,
-      dto,
-      { responseType: 'text' }
-    );
+    return this.http.post(`${this.apiUrlAdminPastas}/permissao/acao`, dto, {
+      responseType: 'text',
+    });
   }
   // ---------------- Novo método: listar todos usuários ----------------
   listarUsuarios(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>('/api/usuarios'); // ajuste se seu endpoint for diferente
   }
 
-
+  // ✅ LISTAR USUÁRIOS POR PASTA
+  listarUsuariosPorPasta(pastaId: number): Observable<UsuarioResumoDTO[]> {
+    return this.http.get<UsuarioResumoDTO[]>(
+      `${this.apiUrlAdminPastas}/${pastaId}/usuarios`
+    );
+  }
 }

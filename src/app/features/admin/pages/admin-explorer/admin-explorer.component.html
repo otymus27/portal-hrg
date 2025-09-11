@@ -325,25 +325,66 @@
   </div>
 
   <div class="modal-backdrop" *ngIf="modalPermissaoAberto">
-    <div class="modal-custom">
+    <div class="modal-custom permissao-modal">
       <h3>Permissões para "{{ pastaParaPermissao.nomePasta }}"</h3>
-      <p>Selecione os usuários que terão acesso a esta pasta:</p>
-      <div class="permissoes-lista" style="max-height: 250px; overflow-y: auto;">
-        <div class="form-check" *ngFor="let u of usuarios">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            [checked]="isUsuarioSelecionado(u)"
-            (change)="selecionarUsuario(u)"
-          />
-          <label class="form-check-label">{{ u.username }}</label>
+      <div class="d-flex justify-content-between gap-4 mt-3">
+        <div class="w-50">
+          <h5>Usuários com Permissão</h5>
+          <div
+            class="permissoes-lista list-group"
+            style="max-height: 250px; overflow-y: auto"
+          >
+            <div
+              *ngFor="let u of usuariosComPermissao"
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              {{ u.username }}
+              <button
+                class="btn btn-danger btn-sm"
+                (click)="removerUsuarioPermissao(u)"
+              >
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+            <div
+              *ngIf="usuariosComPermissao.length === 0"
+              class="text-muted text-center p-3"
+            >
+              Nenhum usuário com permissão.
+            </div>
+          </div>
+        </div>
+
+        <div class="w-50">
+          <h5>Usuários Disponíveis</h5>
+          <div
+            class="permissoes-lista list-group"
+            style="max-height: 250px; overflow-y: auto"
+          >
+            <div
+              *ngFor="let u of usuariosDisponiveis"
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              {{ u.username }}
+              <button
+                class="btn btn-success btn-sm"
+                (click)="adicionarUsuarioPermissao(u)"
+              >
+                <i class="bi bi-plus"></i>
+              </button>
+            </div>
+            <div
+              *ngIf="usuariosDisponiveis.length === 0"
+              class="text-muted text-center p-3"
+            >
+              Todos os usuários já têm permissão.
+            </div>
+          </div>
         </div>
       </div>
-      <div class="modal-actions mt-3">
-        <button
-          class="btn btn-primary me-2"
-          (click)="atualizarPermissoes()"
-        >
+
+      <div class="modal-actions mt-3 text-end">
+        <button class="btn btn-primary me-2" (click)="atualizarPermissoes()">
           Salvar
         </button>
         <button class="btn btn-secondary" (click)="fecharModalPermissao()">
