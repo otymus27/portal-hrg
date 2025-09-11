@@ -299,7 +299,9 @@
         Tem certeza que deseja excluir
         <strong>{{ itensSelecionados.length }}</strong>
         {{
-          itensSelecionados.length === 1 ? "item selecionado" : "itens selecionados"
+          itensSelecionados.length === 1
+            ? "item selecionado"
+            : "itens selecionados"
         }}?
       </p>
       <ul class="list-group mb-3">
@@ -326,7 +328,7 @@
 
   <div class="modal-backdrop" *ngIf="modalPermissaoAberto">
     <div class="modal-custom permissao-modal">
-      <h3>Permissões para "{{ pastaParaPermissao.nomePasta }}"</h3>
+      <h3>Permissões para "{{ pastaParaPermissao?.nomePasta }}"</h3>
       <div class="d-flex justify-content-between gap-4 mt-3">
         <div class="w-50">
           <h5>Usuários com Permissão</h5>
@@ -354,45 +356,20 @@
             </div>
           </div>
         </div>
-  
-        <div class="w-50">
-          <h5>Usuários Disponíveis</h5>
-          <div class="input-group mb-2">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input
-              type="text"
-              class="form-control"
-              placeholder="Buscar usuário..."
-              [(ngModel)]="termoBuscaUsuario"
-            />
-          </div>
-  
-          <div
-            class="permissoes-lista list-group"
-            style="max-height: 250px; overflow-y: auto"
+
+        <div
+          class="w-50 d-flex flex-column align-items-center justify-content-center"
+        >
+          <h5>Adicionar Usuário</h5>
+          <button
+            class="btn btn-success mt-2"
+            (click)="abrirModalSelecionarUsuario()"
           >
-            <div
-              *ngFor="let u of filtrarUsuariosDisponiveis()"
-              class="list-group-item d-flex justify-content-between align-items-center"
-            >
-              {{ u.username }}
-              <button
-                class="btn btn-success btn-sm"
-                (click)="adicionarUsuarioPermissao(u)"
-              >
-                <i class="bi bi-plus"></i>
-              </button>
-            </div>
-            <div
-              *ngIf="usuariosDisponiveis.length === 0"
-              class="text-muted text-center p-3"
-            >
-              Todos os usuários já têm permissão.
-            </div>
-          </div>
+            <i class="bi bi-person-plus me-2"></i>Selecionar
+          </button>
         </div>
       </div>
-  
+
       <div class="modal-actions mt-3 text-end">
         <button class="btn btn-primary me-2" (click)="atualizarPermissoes()">
           Salvar
@@ -403,3 +380,9 @@
       </div>
     </div>
   </div>
+</div>
+
+<app-modal-usuario
+  *ngIf="modalSelecionarUsuarioAberto"
+  [usuariosExcluidosIds]="usuariosComPermissaoIds" (usuarioSelecionado)="onUsuarioSelecionado($event)"
+></app-modal-usuario>

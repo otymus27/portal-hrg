@@ -1,0 +1,113 @@
+/* Estilo para o fundo do modal. 
+  Isso escurece e desfoca o restante da tela, focando no modal.
+*/
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050; 
+  backdrop-filter: blur(4px); 
+}
+
+/* Estilo para a caixa principal do modal. 
+  Define o tamanho, a forma, as sombras e a animação.
+*/
+.modal-custom {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px; /* Um pouco menor para ser mais focado */
+  position: relative;
+  transform: translateY(-20px);
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+
+/* Animação para um efeito suave de entrada */
+@keyframes fadeIn {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Estilo para o cabeçalho do modal. 
+  Centraliza o título e o botão de fechar.
+*/
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+/* Estilo para o botão de fechar */
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: #000;
+}
+
+/* Estilo para a área de busca e a lista de usuários.
+*/
+.user-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+}
+
+/* Estilo para cada item na lista de usuários */
+.list-group-item.list-group-item-action {
+  transition: background-color 0.2s, transform 0.1s;
+  cursor: pointer;
+  border-bottom: 1px solid #f8f9fa; /* Separador sutil entre os itens */
+}
+
+.list-group-item.list-group-item-action:hover {
+  background-color: #e9ecef;
+  transform: scale(1.01);
+}
+
+/* Estilo para o ícone de 'adicionar' */
+.bi-plus-circle-fill {
+  font-size: 1.2rem;
+  transition: transform 0.2s ease-in-out;
+}
+
+.list-group-item.list-group-item-action:hover .bi-plus-circle-fill {
+  transform: scale(1.2);
+}
+
+/* Estilo para a mensagem de lista vazia */
+.text-muted {
+  color: #6c757d !important;
+}
+
+/* Estilos para os botões no rodapé do modal.
+*/
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #dee2e6;
+  padding-top: 20px;
+  margin-top: 20px;
+}

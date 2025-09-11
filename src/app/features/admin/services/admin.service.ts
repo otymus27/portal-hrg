@@ -251,18 +251,26 @@ export class AdminService {
   // }
 
   // ---------------- NOVO MÉTODO: listar todos usuários ----------------
-  // ✅ Agora retorna o objeto de paginação
-  listarUsuarios(): Observable<Paginacao<Usuario>> {
-    // Definimos os parâmetros da requisição para listar todos os usuários
-    // sem filtrar por nome, com um tamanho de página grande para garantir
-    // que todos os usuários sejam retornados em uma única chamada.
+  // ✅ Método corrigido para aceitar o parâmetro opcional 'username'
+  /**
+   * ✅ Método atualizado para aceitar paginação.
+   * @param username - Termo de busca opcional.
+   * @param page - Índice da página a ser buscada (padrão: 0).
+   * @param size - Tamanho da página (padrão: 10).
+   */
+  listarUsuarios(
+    username?: string,
+    page: number = 0,
+    size: number = 10
+  ): Observable<Paginacao<Usuario>> {
     let params = new HttpParams()
-      .set('page', '0') // Página inicial
-      .set('size', '999') // Tamanho de página grande para listar todos
-      .set('sortField', 'username') // Ordena por nome de usuário
-      .set('sortDir', 'asc'); // Ordem ascendente
-      
-    // A chamada http.get agora espera um objeto paginado
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    if (username) {
+      params = params.set('username', username);
+    }
+
     return this.http.get<Paginacao<Usuario>>(this.apiUrlUsuarios, { params });
   }
 

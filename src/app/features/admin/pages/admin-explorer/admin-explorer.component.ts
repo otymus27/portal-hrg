@@ -8,21 +8,24 @@ import {
   ConteudoPasta,
   PastaExcluirDTO,
   UsuarioResumoDTO,
+  PastaPermissaoAcaoDTO,
 } from '../../services/admin.service';
 import { UsuarioService } from '../../../../services/usuario.service';
 import { Usuario } from '../../../../models/usuario';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Paginacao } from '../../../../models/paginacao';
+import { ModalUsuarioComponent } from '../modal-usuario/modal-usuario.component';
 
 @Component({
   selector: 'app-admin-explorer',
   standalone: true,
-  imports: [CommonModule, NgIf, FormsModule],
+  imports: [CommonModule, NgIf, FormsModule, ModalUsuarioComponent],
   templateUrl: './admin-explorer.component.html',
   styleUrls: ['./admin-explorer.component.scss'],
 })
 export class AdminExplorerComponent implements OnInit {
+  // ---------------- Propriedades ----------------
   // Conteúdo
   pastas: PastaAdmin[] = [];
   arquivos: ArquivoAdmin[] = [];
@@ -47,31 +50,22 @@ export class AdminExplorerComponent implements OnInit {
   usuarios: Usuario[] = [];
   usuariosSelecionados: Usuario[] = [];
 
-  // ✅ Nova propriedade para o termo de busca usuarios por username
-  termoBuscaUsuario: string = '';
-
   // Permissões
-  // Permissões
-  usuariosComPermissao: UsuarioResumoDTO[] = []; // <-- Tipo alterado
+  usuariosComPermissao: UsuarioResumoDTO[] = [];
   usuariosDisponiveis: Usuario[] = [];
-  private usuariosIniciaisComPermissao: UsuarioResumoDTO[] = []; // <-- Tipo alterado
+  private usuariosIniciaisComPermissao: UsuarioResumoDTO[] = [];
+  usuariosComPermissaoIds: number[] = [];
 
   // Pasta para permissões
-  pastaParaPermissao: PastaAdmin = {
-    id: 0,
-    nomePasta: '',
-    caminhoCompleto: '',
-    dataCriacao: new Date(),
-    criadoPor: null,
-    subPastas: [],
-    usuariosComPermissao: [],
-  };
+  pastaParaPermissao: PastaAdmin | null = null;
 
   // Seleção
   itensSelecionados: (PastaAdmin | ArquivoAdmin)[] = [];
 
   // Upload múltiplo
   arquivosParaUpload: File[] = [];
+
+  modalSelecionarUsuarioAberto = false;
 
   constructor(
     private adminService: AdminService,
@@ -380,15 +374,11 @@ export class AdminExplorerComponent implements OnInit {
 
   // ---------------- Usuários ----------------
   carregarUsuarios(): void {
-    // ✅ O serviço agora retorna um objeto de paginação
-    // ✅ Ajuste na sintaxe do subscribe para o formato correto
     this.adminService.listarUsuarios().subscribe({
       next: (resposta: Paginacao<Usuario>) => {
-        // Ação para o próximo valor
         this.usuarios = resposta.content || [];
       },
       error: (err: any) => {
-        // Ação em caso de erro
         this.handleError('Erro ao carregar usuários', err);
       },
     });
@@ -406,34 +396,27 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   // ---------------- Permissões ----------------
-  // ✅ Filtrar a lista de usuários disponíveis
-  filtrarUsuariosDisponiveis(): Usuario[] {
-    if (!this.termoBuscaUsuario) {
-      return this.usuariosDisponiveis;
+  abrirModalSelecionarUsuario(): void {
+    this.modalSelecionarUsuarioAberto = true;
+  }
+
+  onUsuarioSelecionado(usuario: Usuario | null): void {
+    if (usuario) {
+      this.adicionarUsuarioPermissao(usuario);
     }
-    const termo = this.termoBuscaUsuario.toLowerCase();
-    return this.usuariosDisponiveis.filter((u) =>
-      u.username.toLowerCase().includes(termo)
-    );
+    this.modalSelecionarUsuarioAberto = false;
   }
 
   abrirModalPermissao(pasta: PastaAdmin): void {
-    this.loading = true;
     this.pastaParaPermissao = pasta;
-
-    // ✅ Chamada ao novo método do service para obter a lista de usuários da pasta
+    this.loading = true;
+  
     this.adminService.listarUsuariosPorPasta(pasta.id).subscribe({
-      next: (usuariosPermitidos) => {
+      // ✅ Corrigido: adicionado o tipo `UsuarioResumoDTO[]` ao parâmetro
+      next: (usuariosPermitidos: UsuarioResumoDTO[]) => {
         this.usuariosComPermissao = usuariosPermitidos;
-        // Cria uma cópia para a lógica de atualização
         this.usuariosIniciaisComPermissao = [...usuariosPermitidos];
-
-        // Filtra a lista geral de usuários para encontrar os disponíveis
-        this.usuariosDisponiveis = this.usuarios.filter(
-          (u) => !this.usuariosComPermissao.some((p) => p.id === u.id)
-        );
-
-        // Abre o modal e finaliza o carregamento
+        this.atualizarListaDeDisponiveis();
         this.modalPermissaoAberto = true;
         this.loading = false;
       },
@@ -444,45 +427,46 @@ export class AdminExplorerComponent implements OnInit {
     });
   }
 
-  // ✅ Método atualizado para receber UsuarioResumoDTO
-  adicionarUsuarioPermissao(usuario: UsuarioResumoDTO): void {
-    // O filtro continua funcionando porque o tipo Usuario também tem a propriedade 'id'
-    this.usuariosComPermissao.push(usuario);
-    this.usuariosDisponiveis = this.usuariosDisponiveis.filter(
-      (u) => u.id !== usuario.id
-    );
+  adicionarUsuarioPermissao(usuario: Usuario): void {
+    this.usuariosComPermissao.push({
+      id: usuario.id,
+      username: usuario.username,
+    });
+    this.atualizarListaDeDisponiveis();
   }
 
-  // ✅ Método atualizado para receber UsuarioResumoDTO
   removerUsuarioPermissao(usuario: UsuarioResumoDTO): void {
-    // O `u` aqui é do tipo Usuario[], o filtro ainda precisa da propriedade `id` para funcionar
-    // Por isso vamos procurar o usuário completo
-    const usuarioCompleto = this.usuarios.find((u) => u.id === usuario.id);
-    if (usuarioCompleto) {
-      this.usuariosDisponiveis.push(usuarioCompleto);
-    }
-
     this.usuariosComPermissao = this.usuariosComPermissao.filter(
       (u) => u.id !== usuario.id
     );
+    this.atualizarListaDeDisponiveis();
+  }
+
+  private atualizarListaDeDisponiveis(): void {
+    this.usuariosDisponiveis = this.usuarios.filter(
+      (u) => !this.usuariosComPermissao.some((p) => p.id === u.id)
+    );
+    this.usuariosComPermissaoIds = this.usuariosComPermissao.map((u) => u.id);
   }
 
   atualizarPermissoes(): void {
-    if (!this.pastaParaPermissao) {
+    if (!this.pastaParaPermissao || !this.pastaParaPermissao.id) {
+      this.handleError('ID da pasta para permissões não encontrado.');
       return;
     }
 
+    const idsAtuais = new Set(this.usuariosComPermissao.map((u) => u.id));
+    const idsIniciais = new Set(this.usuariosIniciaisComPermissao.map((u) => u.id));
+
     const adicionarUsuariosIds = this.usuariosComPermissao
-      .map((u) => u.id)
-      .filter(
-        (id) => !this.usuariosIniciaisComPermissao.some((u) => u.id === id)
-      );
+      .filter((u) => !idsIniciais.has(u.id))
+      .map((u) => u.id);
 
     const removerUsuariosIds = this.usuariosIniciaisComPermissao
-      .map((u) => u.id)
-      .filter((id) => !this.usuariosComPermissao.some((u) => u.id === id));
+      .filter((u) => !idsAtuais.has(u.id))
+      .map((u) => u.id);
 
-    const dto = {
+    const dto: PastaPermissaoAcaoDTO = {
       pastaId: this.pastaParaPermissao.id,
       adicionarUsuariosIds: adicionarUsuariosIds,
       removerUsuariosIds: removerUsuariosIds,
@@ -501,25 +485,13 @@ export class AdminExplorerComponent implements OnInit {
 
   fecharModalPermissao(): void {
     this.modalPermissaoAberto = false;
-    this.pastaParaPermissao = {
-      id: 0,
-      nomePasta: '',
-      caminhoCompleto: '',
-      dataCriacao: new Date(),
-      criadoPor: null,
-      subPastas: [],
-      usuariosComPermissao: [],
-    };
+    this.pastaParaPermissao = null;
     this.usuariosComPermissao = [];
     this.usuariosDisponiveis = [];
     this.usuariosIniciaisComPermissao = [];
   }
 
   // ---------------- Helpers ----------------
-  isFolder(item: PastaAdmin | ArquivoAdmin | null): boolean {
-    return !!item && 'subPastas' in item;
-  }
-
   isPasta(item: PastaAdmin | ArquivoAdmin): item is PastaAdmin {
     return (item as PastaAdmin).subPastas !== undefined;
   }
