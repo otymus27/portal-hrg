@@ -4,11 +4,35 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Usuario } from '../../../models/usuario';
 
+
+// ✅ INTERFACE PAGINACAO COMPLETA
 export interface Paginacao<T> {
   content: T[];
-  number: number;
-  totalPages: number;
   totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+  pageable: {
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+      empty: boolean;
+    };
+    offset: number;
+    pageNumber: number;
+    pageSize: number;
+    unpaged: boolean;
+    paged: boolean;
+  };
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
 }
 
 export interface PastaAdmin {
@@ -68,6 +92,7 @@ export class AdminService {
   private readonly apiUrlAdminPastas = 'http://localhost:8082/api/pastas';
   private readonly apiUrlAdminArquivos = 'http://localhost:8082/api/arquivos';
   private readonly apiUrlPublica = 'http://localhost:8082/api/publico';
+  private readonly apiUrlUsuarios = 'http://10.85.190.202:8082/api/usuario'; // ✅ Adicione a URL base para usuários
 
   constructor(private http: HttpClient) {}
 
@@ -220,9 +245,25 @@ export class AdminService {
       responseType: 'text',
     });
   }
-  // ---------------- Novo método: listar todos usuários ----------------
-  listarUsuarios(): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>('/api/usuarios'); // ajuste se seu endpoint for diferente
+  // // ---------------- Novo método: listar todos usuários ----------------
+  // listarUsuarios(): Observable<Usuario[]> {
+  //   return this.http.get<Usuario[]>(this.apiUrlUsuarios);
+  // }
+
+  // ---------------- NOVO MÉTODO: listar todos usuários ----------------
+  // ✅ Agora retorna o objeto de paginação
+  listarUsuarios(): Observable<Paginacao<Usuario>> {
+    // Definimos os parâmetros da requisição para listar todos os usuários
+    // sem filtrar por nome, com um tamanho de página grande para garantir
+    // que todos os usuários sejam retornados em uma única chamada.
+    let params = new HttpParams()
+      .set('page', '0') // Página inicial
+      .set('size', '999') // Tamanho de página grande para listar todos
+      .set('sortField', 'username') // Ordena por nome de usuário
+      .set('sortDir', 'asc'); // Ordem ascendente
+      
+    // A chamada http.get agora espera um objeto paginado
+    return this.http.get<Paginacao<Usuario>>(this.apiUrlUsuarios, { params });
   }
 
   // ✅ LISTAR USUÁRIOS POR PASTA

@@ -11,9 +11,9 @@ import {
 } from '../../services/admin.service';
 import { UsuarioService } from '../../../../services/usuario.service';
 import { Usuario } from '../../../../models/usuario';
-import { Paginacao } from '../../../../models/paginacao';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { Paginacao } from '../../../../models/paginacao';
 
 @Component({
   selector: 'app-admin-explorer',
@@ -46,6 +46,9 @@ export class AdminExplorerComponent implements OnInit {
   // Usuários
   usuarios: Usuario[] = [];
   usuariosSelecionados: Usuario[] = [];
+
+  // ✅ Nova propriedade para o termo de busca usuarios por username
+  termoBuscaUsuario: string = '';
 
   // Permissões
   // Permissões
@@ -377,10 +380,17 @@ export class AdminExplorerComponent implements OnInit {
 
   // ---------------- Usuários ----------------
   carregarUsuarios(): void {
-    this.usuarioService.listar().subscribe({
-      next: (resposta: Paginacao<Usuario>) =>
-        (this.usuarios = resposta.content || []),
-      error: (err: any) => this.handleError('Erro ao carregar usuários', err),
+    // ✅ O serviço agora retorna um objeto de paginação
+    // ✅ Ajuste na sintaxe do subscribe para o formato correto
+    this.adminService.listarUsuarios().subscribe({
+      next: (resposta: Paginacao<Usuario>) => {
+        // Ação para o próximo valor
+        this.usuarios = resposta.content || [];
+      },
+      error: (err: any) => {
+        // Ação em caso de erro
+        this.handleError('Erro ao carregar usuários', err);
+      },
     });
   }
 
@@ -396,6 +406,17 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   // ---------------- Permissões ----------------
+  // ✅ Filtrar a lista de usuários disponíveis
+  filtrarUsuariosDisponiveis(): Usuario[] {
+    if (!this.termoBuscaUsuario) {
+      return this.usuariosDisponiveis;
+    }
+    const termo = this.termoBuscaUsuario.toLowerCase();
+    return this.usuariosDisponiveis.filter((u) =>
+      u.username.toLowerCase().includes(termo)
+    );
+  }
+
   abrirModalPermissao(pasta: PastaAdmin): void {
     this.loading = true;
     this.pastaParaPermissao = pasta;
@@ -423,28 +444,28 @@ export class AdminExplorerComponent implements OnInit {
     });
   }
 
- // ✅ Método atualizado para receber UsuarioResumoDTO
-adicionarUsuarioPermissao(usuario: UsuarioResumoDTO): void {
-  // O filtro continua funcionando porque o tipo Usuario também tem a propriedade 'id'
-  this.usuariosComPermissao.push(usuario);
-  this.usuariosDisponiveis = this.usuariosDisponiveis.filter(
-    (u) => u.id !== usuario.id
-  );
-}
+  // ✅ Método atualizado para receber UsuarioResumoDTO
+  adicionarUsuarioPermissao(usuario: UsuarioResumoDTO): void {
+    // O filtro continua funcionando porque o tipo Usuario também tem a propriedade 'id'
+    this.usuariosComPermissao.push(usuario);
+    this.usuariosDisponiveis = this.usuariosDisponiveis.filter(
+      (u) => u.id !== usuario.id
+    );
+  }
 
   // ✅ Método atualizado para receber UsuarioResumoDTO
-removerUsuarioPermissao(usuario: UsuarioResumoDTO): void {
-  // O `u` aqui é do tipo Usuario[], o filtro ainda precisa da propriedade `id` para funcionar
-  // Por isso vamos procurar o usuário completo
-  const usuarioCompleto = this.usuarios.find(u => u.id === usuario.id);
-  if (usuarioCompleto) {
+  removerUsuarioPermissao(usuario: UsuarioResumoDTO): void {
+    // O `u` aqui é do tipo Usuario[], o filtro ainda precisa da propriedade `id` para funcionar
+    // Por isso vamos procurar o usuário completo
+    const usuarioCompleto = this.usuarios.find((u) => u.id === usuario.id);
+    if (usuarioCompleto) {
       this.usuariosDisponiveis.push(usuarioCompleto);
+    }
+
+    this.usuariosComPermissao = this.usuariosComPermissao.filter(
+      (u) => u.id !== usuario.id
+    );
   }
-  
-  this.usuariosComPermissao = this.usuariosComPermissao.filter(
-    (u) => u.id !== usuario.id
-  );
-}
 
   atualizarPermissoes(): void {
     if (!this.pastaParaPermissao) {

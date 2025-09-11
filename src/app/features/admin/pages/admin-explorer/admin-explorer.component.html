@@ -354,15 +354,25 @@
             </div>
           </div>
         </div>
-
+  
         <div class="w-50">
           <h5>Usuários Disponíveis</h5>
+          <div class="input-group mb-2">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar usuário..."
+              [(ngModel)]="termoBuscaUsuario"
+            />
+          </div>
+  
           <div
             class="permissoes-lista list-group"
             style="max-height: 250px; overflow-y: auto"
           >
             <div
-              *ngFor="let u of usuariosDisponiveis"
+              *ngFor="let u of filtrarUsuariosDisponiveis()"
               class="list-group-item d-flex justify-content-between align-items-center"
             >
               {{ u.username }}
@@ -382,7 +392,7 @@
           </div>
         </div>
       </div>
-
+  
       <div class="modal-actions mt-3 text-end">
         <button class="btn btn-primary me-2" (click)="atualizarPermissoes()">
           Salvar
@@ -393,4 +403,3 @@
       </div>
     </div>
   </div>
-</div>
