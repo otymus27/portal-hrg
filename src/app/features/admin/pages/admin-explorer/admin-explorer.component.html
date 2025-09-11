@@ -117,12 +117,28 @@
               >
                 <i class="bi bi-pencil-square"></i>
               </button>
+
+               <button
+                class="btn btn-primary btn-sm me-1"
+                (click)="abrirModalMoverPasta(pasta); $event.stopPropagation()"
+              >
+                <i class="bi bi-arrow-right-square"></i>
+              </button>
+
               <button
                 class="btn btn-danger btn-sm me-1"
                 (click)="abrirModalExcluir(pasta); $event.stopPropagation()"
               >
                 <i class="bi bi-trash"></i>
               </button>
+
+              <button
+                class="btn btn-info btn-sm me-1"
+                (click)="abrirModalCopiarPasta(pasta); $event.stopPropagation()"
+              >
+                <i class="bi bi-files"></i>
+              </button>
+              
             </td>
           </tr>
 
@@ -150,11 +166,27 @@
               >
                 <i class="bi bi-pencil-square"></i>
               </button>
+
+              <button
+                class="btn btn-info btn-sm me-1"
+                (click)="abrirModalMoverArquivo(arquivo); $event.stopPropagation()"
+              >
+                <i class="bi bi-arrows-move"></i>
+              </button>
+
               <button
                 class="btn btn-danger btn-sm"
                 (click)="abrirModalExcluir(arquivo); $event.stopPropagation()"
               >
                 <i class="bi bi-trash"></i>
+              </button>
+
+              <!-- Botão de copiar arquivo -->
+              <button
+                class="btn btn-info btn-sm me-1"
+                (click)="abrirModalCopiar(arquivo); $event.stopPropagation()"
+              >
+                <i class="bi bi-files"></i>
               </button>
             </td>
           </tr>
@@ -328,3 +360,143 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Copiar Arquivo -->
+<div class="modal-backdrop" *ngIf="modalCopiarAberto">
+  <div class="modal-custom">
+    <h3>Copiar Arquivo: {{ arquivoParaCopiar?.nome }}</h3>
+
+    <label for="pastaDestino">Selecionar pasta de destino:</label>
+    <select
+      id="pastaDestino"
+      class="form-select mb-3"
+      [(ngModel)]="pastaDestinoSelecionada"
+    >
+      <option
+        *ngFor="let pasta of pastasDisponiveisParaCopiar"
+        [ngValue]="pasta"
+      >
+        {{ pasta.nomePasta }}
+      </option>
+    </select>
+
+    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
+      <button
+        class="btn btn-primary"
+        [disabled]="!pastaDestinoSelecionada"
+        (click)="copiarArquivo()"
+      >
+        Copiar
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalCopiar()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Copiar Pasta -->
+<div class="modal-backdrop" *ngIf="modalCopiarPastaAberto">
+  <div class="modal-custom">
+    <h3>Copiar Pasta: {{ pastaParaCopiar?.nomePasta }}</h3>
+
+    <label>Selecionar pasta destino:</label>
+    <select
+      class="form-select mb-3"
+      [(ngModel)]="pastaDestinoSelecionada"
+    >
+      <option [ngValue]="null">Raiz</option>
+      <option *ngFor="let pasta of pastasDisponiveisParaCopiar" [ngValue]="pasta">
+        {{ pasta.nomePasta }}
+      </option>
+    </select>
+
+    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
+      <button
+        class="btn btn-primary"
+        (click)="copiarPasta()"
+        [disabled]="!pastaParaCopiar"
+      >
+        Copiar
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalCopiarPasta()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Mover ou Recortar Pasta -->
+<div class="modal-backdrop" *ngIf="modalMoverPastaAberto">
+  <div class="modal-custom">
+    <h3>Mover Pasta</h3>
+    <p>
+      Selecione a pasta de destino para 
+      <strong>{{ pastaParaMover?.nomePasta }}</strong>:
+    </p>
+
+    <select
+      class="form-select mb-3"
+      [(ngModel)]="pastaDestinoMover"
+    >
+      <option [ngValue]="null">Raiz</option>
+      <option *ngFor="let pasta of pastasDisponiveisParaMover" [ngValue]="pasta">
+        {{ pasta.nomePasta }}
+      </option>
+    </select>
+
+    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
+      <button
+        class="btn btn-primary"
+        (click)="moverPasta()"
+        [disabled]="!pastaParaMover"
+      >
+        Mover
+      </button>
+      <button
+        class="btn btn-secondary"
+        (click)="fecharModalMoverPasta()"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Mover Arquivo -->
+<div class="modal-backdrop" *ngIf="modalMoverArquivoAberto">
+  <div class="modal-custom">
+    <h3>Mover Arquivo</h3>
+    <p>
+      Selecionar a pasta de destino para:
+      <strong>{{ arquivoParaMover?.nome }}</strong>
+    </p>
+
+    <label for="pastaDestino">Pasta de Destino:</label>
+    <select
+      id="pastaDestino"
+      class="form-select mb-3"
+      [(ngModel)]="pastaDestinoArquivo"
+    >
+      <option *ngFor="let pasta of pastasDisponiveisParaMover" [ngValue]="pasta">
+        {{ pasta.nomePasta }}
+      </option>
+    </select>
+
+    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
+      <button
+        class="btn btn-primary"
+        (click)="moverArquivo()"
+        [disabled]="!pastaDestinoArquivo"
+      >
+        Mover
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalMoverArquivo()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+
+

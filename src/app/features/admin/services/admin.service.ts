@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -11,14 +11,14 @@ export interface Paginacao<T> {
 }
 
 export interface PastaAdmin {
-  id: string;
+  id: number;
   nomePasta: string;
   subPastas?: PastaAdmin[];
   arquivos?: ArquivoAdmin[];
 }
 
 export interface ArquivoAdmin {
-  id: string;
+  id: number;
   nome: string;
   tipo: string;
   tamanho: number;
@@ -42,7 +42,7 @@ export interface PastaCompletaDTO {
 }
 
 export interface PastaExcluirDTO {
-  idsPastas: string[];
+  idsPastas: number[];
   excluirConteudo: boolean;
 }
 
@@ -66,7 +66,7 @@ export class AdminService {
       );
   }
 
-  listarConteudoPorId(pastaId: string): Observable<ConteudoPasta> {
+  listarConteudoPorId(pastaId: number): Observable<ConteudoPasta> {
     return this.http
       .get<PastaAdmin>(`${this.apiUrlAdminPastas}/${pastaId}`)
       .pipe(
@@ -77,7 +77,7 @@ export class AdminService {
       );
   }
 
-  downloadArquivo(arquivoId: string): Observable<Blob> {
+  downloadArquivo(arquivoId: number): Observable<Blob> {
     return this.http.get(
       `${this.apiUrlPublica}/download/arquivo/${arquivoId}`,
       {
@@ -89,17 +89,17 @@ export class AdminService {
   // --- Pastas ---
   criarPasta(body: {
     nome: string;
-    pastaPaiId?: string;
+    pastaPaiId?: number;
     usuariosComPermissaoIds: number[];
   }): Observable<PastaAdmin> {
     return this.http.post<PastaAdmin>(this.apiUrlAdminPastas, body);
   }
 
-  excluirPasta(id: string): Observable<void> {
+  excluirPasta(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrlAdminPastas}/${id}`);
   }
 
-  renomearPasta(id: string, novoNome: string): Observable<PastaAdmin> {
+  renomearPasta(id: number, novoNome: string): Observable<PastaAdmin> {
     return this.http.patch<PastaAdmin>(
       `${this.apiUrlAdminPastas}/${id}/renomear`,
       { novoNome }
@@ -113,10 +113,10 @@ export class AdminService {
   }
 
   // --- Upload de um arquivo ---
-  uploadArquivo(file: File, pastaId: string): Observable<ArquivoAdmin> {
+  uploadArquivo(file: File, pastaId: number): Observable<ArquivoAdmin> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('pastaId', pastaId);
+    formData.append('pastaId', pastaId.toString());
     return this.http.post<ArquivoAdmin>(
       `${this.apiUrlAdminArquivos}/upload`,
       formData
@@ -124,7 +124,7 @@ export class AdminService {
   }
 
   // --- Upload de vários arquivos ---
-  uploadMultiplosArquivos(files: File[], pastaId: string) {
+  uploadMultiplosArquivos(files: File[], pastaId: number) {
     const formData = new FormData();
     files.forEach((file) => formData.append('arquivos', file));
 
@@ -134,14 +134,56 @@ export class AdminService {
     );
   }
 
-  excluirArquivo(id: string): Observable<void> {
+  excluirArquivo(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrlAdminArquivos}/arquivos/${id}`);
   }
 
-  renomearArquivo(id: string, novoNome: string): Observable<ArquivoAdmin> {
+  renomearArquivo(id: number, novoNome: string): Observable<ArquivoAdmin> {
     return this.http.put<ArquivoAdmin>(
       `${this.apiUrlAdminArquivos}/renomear/${id}`,
       { novoNome }
     );
   }
+
+   // ---------------- RF-020: Copiar arquivo ----------------
+  copiarArquivo(arquivoId: number, pastaDestinoId: number): Observable<ArquivoAdmin> {
+    const url = `${this.apiUrlAdminArquivos}/${arquivoId}/copiar/${pastaDestinoId}`;
+    return this.http.post<ArquivoAdmin>(url, null);
+  }
+
+ /**
+ * Copia uma pasta (opcionalmente para uma pasta de destino).
+ * O backend espera o destino como request param 'destinoPastaId' (opcional).
+ */
+  copiarPasta(id: string, destinoPastaId?: string | number): Observable<PastaAdmin> {
+    let params = new HttpParams();
+    if (destinoPastaId !== undefined && destinoPastaId !== null) {
+      params = params.set('destinoPastaId', String(destinoPastaId));
+    }
+    // POST sem body (backend apenas usa path + query param)
+    return this.http.post<PastaAdmin>(`${this.apiUrlAdminPastas}/${id}/copiar`, null, { params });
+  }
+
+
+  // --- Mover Pasta ---
+  moverPasta(idPasta: number, novaPastaPaiId?: number): Observable<PastaAdmin> {
+    const params: any = novaPastaPaiId !== undefined ? { novaPastaPaiId } : {};
+    return this.http.patch<PastaAdmin>(
+      `${this.apiUrlAdminPastas}/${idPasta}/mover`,
+      null, // Sem corpo, apenas query param
+      { params }
+    );
+  }
+
+  // RF-019: Mover arquivo
+  moverArquivo(arquivoId: number, pastaDestinoId: number): Observable<ArquivoAdmin> {
+    return this.http.put<ArquivoAdmin>(
+      `${this.apiUrlAdminArquivos}/${arquivoId}/mover/${pastaDestinoId}`,
+      null // PUT sem corpo
+    );
+  }
+
+
+
+
 }
