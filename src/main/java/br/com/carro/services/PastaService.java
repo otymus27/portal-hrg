@@ -1,10 +1,10 @@
 package br.com.carro.services;
 
-import br.com.carro.controllers.PastaController;
 import br.com.carro.entities.Arquivo;
 import br.com.carro.entities.DTO.*;
 import br.com.carro.entities.Pasta;
 import br.com.carro.entities.Usuario.Usuario;
+import br.com.carro.exceptions.ResourceNotFoundException;
 import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import br.com.carro.repositories.UsuarioRepository;
@@ -455,120 +455,137 @@ public class PastaService {
     // --- COPIAR PASTA --- //
 
     @Transactional
-    public Pasta copiarPasta(Long pastaId, Long destinoPastaId, Usuario usuarioLogado) throws AccessDeniedException {
-        final Pasta pastaOriginal = pastaRepository.findById(pastaId)
-                .orElseThrow(() -> new EntityNotFoundException("Pasta original não encontrada."));
+    public Pasta copiarPasta(Long id, Long idDestino, Usuario usuarioLogado) throws AccessDeniedException {
+        logger.info("copiarPasta called: pastaId={}, idDestino={}, usuario={}", id, idDestino, usuarioLogado != null ? usuarioLogado.getUsername() : null);
 
-        final Pasta destinoPasta = (destinoPastaId != null)
-                ? pastaRepository.findById(destinoPastaId)
-                .orElseThrow(() -> new EntityNotFoundException("Pasta de destino não encontrada."))
-                : pastaOriginal.getPastaPai(); // mesmo nível da original
+        Pasta pastaOriginal = pastaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pasta original não encontrada"));
 
-        // ===== Regras de segurança =====
-        if (!usuarioLogado.isAdmin()) {
-            if (!temPermissao(usuarioLogado, pastaOriginal)) {
-                throw new AccessDeniedException("Você não tem permissão para copiar esta pasta.");
+        Pasta pastaPaiDestino = null;
+        Path caminhoDestino;
+
+        if (idDestino != null) {
+            pastaPaiDestino = pastaRepository.findById(idDestino)
+                    .orElseThrow(() -> new ResourceNotFoundException("Pasta destino não encontrada"));
+            logger.debug("pastaPaiDestino encontrado: id={}, caminhoCompleto={}", pastaPaiDestino.getId(), pastaPaiDestino.getCaminhoCompleto());
+
+            // Normaliza o caminho de destino: se for relativo, resolve contra rootDirectory
+            Path possivel = Paths.get(pastaPaiDestino.getCaminhoCompleto());
+            if (!possivel.isAbsolute()) {
+                caminhoDestino = Paths.get(rootDirectory).resolve(possivel).normalize();
+            } else {
+                caminhoDestino = possivel.normalize();
             }
-            if (destinoPasta == null) {
-                throw new AccessDeniedException("Gerentes não podem copiar para o diretório raiz.");
-            }
-            if (!temPermissao(usuarioLogado, destinoPasta)) {
-                throw new AccessDeniedException("Você não tem permissão na pasta de destino.");
-            }
+        } else {
+            // Se não foi informada pasta destino, usa a raiz
+            caminhoDestino = Paths.get(rootDirectory).normalize();
+            logger.debug("idDestino não informado. Usando rootDirectory: {}", caminhoDestino);
         }
 
-        // Evita copiar para dentro de si mesma (ou descendente)
-        if (destinoPasta != null && isDescendente(destinoPasta, pastaOriginal)) {
-            throw new IllegalArgumentException("A pasta de destino não pode estar dentro da pasta original.");
+        // Segurança: garante que destino está dentro do rootDirectory
+        Path rootPath = Paths.get(rootDirectory).toAbsolutePath().normalize();
+        if (!caminhoDestino.toAbsolutePath().normalize().startsWith(rootPath)) {
+            throw new IllegalArgumentException("Caminho de destino fora do diretório raiz configurado.");
         }
 
-        // ===== Preparar nome/caminho destino sem colisão =====
-        final String baseNome = pastaOriginal.getNomePasta() + "_copy";
-        final String caminhoDestinoPai = (destinoPasta != null) ? destinoPasta.getCaminhoCompleto() : rootDirectory;
-        final Path dirPaiDestino = Paths.get(caminhoDestinoPai);
-        final String nomeNovaPasta = gerarNomeCopiaDisponivel(baseNome, dirPaiDestino);
-        final Path caminhoNovaPasta = dirPaiDestino.resolve(FileUtils.sanitizeFileName(nomeNovaPasta));
+        // Gera um nome válido para a nova pasta
+        String nomeNovaPasta = gerarNomeCopiaDisponivel(pastaOriginal.getNomePasta(), caminhoDestino);
+        Path caminhoNovaPasta = caminhoDestino.resolve(FileUtils.sanitizeFileName(nomeNovaPasta)).normalize();
+
+        logger.info("Criando pasta de copia: nomeNovaPasta='{}', caminhoDestino='{}', caminhoNovaPasta='{}'",
+                nomeNovaPasta, caminhoDestino, caminhoNovaPasta);
 
         try {
-            Files.createDirectory(caminhoNovaPasta);
+            Files.createDirectories(caminhoNovaPasta); // cria recursivamente, mais seguro
         } catch (IOException e) {
-            throw new RuntimeException("Erro ao criar a nova pasta no sistema de arquivos.", e);
+            logger.error("Erro ao criar nova pasta no FS: {}", caminhoNovaPasta, e);
+            throw new RuntimeException("Erro ao criar nova pasta", e);
         }
 
-        // ===== Criar entidade raiz da cópia =====
         Pasta novaPasta = new Pasta();
         novaPasta.setNomePasta(nomeNovaPasta);
         novaPasta.setCaminhoCompleto(caminhoNovaPasta.toString());
         novaPasta.setDataCriacao(LocalDateTime.now());
         novaPasta.setDataAtualizacao(LocalDateTime.now());
         novaPasta.setCriadoPor(usuarioLogado);
-        novaPasta.setUsuariosComPermissao(new HashSet<>(pastaOriginal.getUsuariosComPermissao()));
-        novaPasta.setPastaPai(destinoPasta);
+        novaPasta.setUsuariosComPermissao(new HashSet<>(Optional.ofNullable(pastaOriginal.getUsuariosComPermissao()).orElse(Set.of())));
+        novaPasta.setPastaPai(pastaPaiDestino);
         novaPasta = pastaRepository.save(novaPasta);
 
-        // ===== Copiar recursivamente com mapa (caminho relativo -> Pasta) =====
-        final Path caminhoOriginal = Paths.get(pastaOriginal.getCaminhoCompleto());
-        final Pasta raizCopiada = novaPasta;
-        final Set<Usuario> permissoes = new HashSet<>(pastaOriginal.getUsuariosComPermissao());
+        // Chamada recursiva para copiar conteúdo
+        copiarSubpastasEArquivos(pastaOriginal, novaPasta, caminhoNovaPasta, usuarioLogado);
 
-        final Map<Path, Pasta> mapaRelPathParaPasta = new HashMap<>();
-        mapaRelPathParaPasta.put(Paths.get(""), raizCopiada); // raiz da cópia
+        logger.info("Cópia concluída: novaPasta.id={}, caminho='{}'", novaPasta.getId(), novaPasta.getCaminhoCompleto());
+        return novaPasta;
+    }
 
-        try {
-            Files.walkFileTree(caminhoOriginal, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    if (dir.equals(caminhoOriginal)) return FileVisitResult.CONTINUE;
+    private void copiarSubpastasEArquivos(Pasta pastaOriginal, Pasta pastaDestino, Path caminhoDestino, Usuario usuarioLogado) {
+        logger.debug("copiarSubpastasEArquivos: originalId={}, destinoId={}, caminhoDestino={}",
+                pastaOriginal.getId(), pastaDestino.getId(), caminhoDestino);
 
-                    Path rel = caminhoOriginal.relativize(dir);               // ex: "Sub1/Sub2"
-                    Path targetDir = caminhoNovaPasta.resolve(rel);           // destino físico
-                    Files.createDirectory(targetDir);
+        // 1) Copiar arquivos da pasta atual
+        if (pastaOriginal.getArquivos() != null) {
+            for (Arquivo arquivo : pastaOriginal.getArquivos()) {
+                Path origemArquivo = Paths.get(arquivo.getCaminhoArmazenamento()).normalize();
+                Path destinoArquivo = caminhoDestino.resolve(arquivo.getNomeArquivo()).normalize();
 
-                    Pasta pai = mapaRelPathParaPasta.get(
-                            rel.getParent() == null ? Paths.get("") : rel.getParent()
-                    );
-
-                    Pasta subPasta = new Pasta();
-                    subPasta.setNomePasta(dir.getFileName().toString());
-                    subPasta.setCaminhoCompleto(targetDir.toString());
-                    subPasta.setDataCriacao(LocalDateTime.now());
-                    subPasta.setDataAtualizacao(LocalDateTime.now());
-                    subPasta.setCriadoPor(usuarioLogado);
-                    subPasta.setUsuariosComPermissao(permissoes);
-                    subPasta.setPastaPai(pai);
-                    subPasta = pastaRepository.save(subPasta);
-
-                    // registra no mapa para localizar o pai dos próximos níveis/arquivos
-                    mapaRelPathParaPasta.put(rel, subPasta);
-
-                    return FileVisitResult.CONTINUE;
+                logger.debug("Copiando arquivo: origem='{}' -> destino='{}'", origemArquivo, destinoArquivo);
+                try {
+                    // garante diretório pai
+                    Files.createDirectories(destinoArquivo.getParent());
+                    Files.copy(origemArquivo, destinoArquivo, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    logger.error("Erro ao copiar arquivo {} -> {}", origemArquivo, destinoArquivo, e);
+                    throw new RuntimeException("Erro ao copiar arquivo " + arquivo.getNomeArquivo(), e);
                 }
 
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Path rel = caminhoOriginal.relativize(file);              // ex: "Sub1/a.txt"
-                    Path destino = caminhoNovaPasta.resolve(rel);
-                    Files.copy(file, destino);
+                // Persistir registro no banco (preenchendo campos obrigatórios)
+                Arquivo novoArquivo = new Arquivo();
+                novoArquivo.setNomeArquivo(arquivo.getNomeArquivo());
+                novoArquivo.setCaminhoArmazenamento(destinoArquivo.toString());
+                novoArquivo.setPasta(pastaDestino);
+                novoArquivo.setCriadoPor(usuarioLogado);
+                novoArquivo.setDataUpload(LocalDateTime.now());
+                novoArquivo.setDataAtualizacao(LocalDateTime.now());
 
-                    Pasta pai = mapaRelPathParaPasta.get(
-                            rel.getParent() == null ? Paths.get("") : rel.getParent()
-                    );
-
-                    Arquivo arquivoBanco = new Arquivo();
-                    arquivoBanco.setNomeArquivo(file.getFileName().toString());
-                    arquivoBanco.setCaminhoArmazenamento(destino.toString());
-                    arquivoBanco.setPasta(pai);
-                    arquivoRepository.save(arquivoBanco);
-
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException("Erro ao copiar arquivos e subpastas.", e);
+                arquivoRepository.save(novoArquivo);
+                logger.debug("Arquivo salvo no banco: {}", novoArquivo.getNomeArquivo());
+            }
         }
 
-        return raizCopiada;
+        // 2) Copiar subpastas recursivamente
+        if (pastaOriginal.getSubPastas() != null) {
+            for (Pasta sub : pastaOriginal.getSubPastas()) {
+                // Gera nome disponível no mesmo caminhoDestino (evita colisão)
+                String nomeBaseSub = sub.getNomePasta();
+                String novoNomeSub = gerarNomeCopiaDisponivel(nomeBaseSub, caminhoDestino);
+                Path caminhoSubDestino = caminhoDestino.resolve(FileUtils.sanitizeFileName(novoNomeSub)).normalize();
+
+                logger.debug("Criando subpasta destino: {} -> {}", sub.getNomePasta(), caminhoSubDestino);
+                try {
+                    Files.createDirectories(caminhoSubDestino);
+                } catch (IOException e) {
+                    logger.error("Erro ao criar subpasta {}", caminhoSubDestino, e);
+                    throw new RuntimeException("Erro ao criar subpasta " + novoNomeSub, e);
+                }
+
+                // Persistir subpasta no banco
+                Pasta novaSub = new Pasta();
+                novaSub.setNomePasta(novoNomeSub);
+                novaSub.setCaminhoCompleto(caminhoSubDestino.toString());
+                novaSub.setDataCriacao(LocalDateTime.now());
+                novaSub.setDataAtualizacao(LocalDateTime.now());
+                novaSub.setCriadoPor(usuarioLogado);
+                novaSub.setUsuariosComPermissao(new HashSet<>(Optional.ofNullable(sub.getUsuariosComPermissao()).orElse(Set.of())));
+                novaSub.setPastaPai(pastaDestino);
+                novaSub = pastaRepository.save(novaSub);
+
+                // chamada recursiva
+                copiarSubpastasEArquivos(sub, novaSub, caminhoSubDestino, usuarioLogado);
+            }
+        }
     }
+
 
 
 
