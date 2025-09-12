@@ -5,12 +5,14 @@ import br.com.carro.entities.Pasta;
 import br.com.carro.entities.DTO.ArquivoDTO;
 import br.com.carro.entities.Usuario.Usuario;
 import br.com.carro.exceptions.ArquivoNaoEncontradoException;
+import br.com.carro.exceptions.ErrorMessage;
 import br.com.carro.exceptions.PermissaoNegadaException;
 import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import br.com.carro.services.ArquivoService;
 import br.com.carro.utils.AuthService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
@@ -54,123 +56,154 @@ public class ArquivoController {
      * @param pastaId ID da pasta de destino
      * @param authentication Usuário autenticado
      */
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadArquivo(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("pastaId") Long pastaId,
-            Authentication authentication
-    ) {
 
-        try{
+    // ✅ ENDPOINT 01 - Upload de arquivo para uma pasta
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadArquivo(@RequestParam("file") MultipartFile file,
+                                           @RequestParam("pastaId") Long pastaId,
+                                           Authentication authentication,
+                                           HttpServletRequest httpRequest) {
+        try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             Arquivo arquivo = arquivoService.uploadArquivo(file, pastaId, usuarioLogado, pastaRepository, arquivoRepository);
             return ResponseEntity.ok(arquivo);
-
-        }catch (IllegalArgumentException | jakarta.persistence.EntityNotFoundException e) {
-            logger.warn("Erro ao fazer uploado: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
-
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Dados inválidos",
+                    e.getMessage(),
+                    httpRequest.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        } catch (AccessDeniedException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.FORBIDDEN.value(),
+                    "Acesso negado",
+                    "Você não tem permissão para atualizar fazer upload",
+                    httpRequest.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         } catch (Exception e) {
-            logger.error("Erro inesperado ao fazer upload do arquivo", e);
-            return ResponseEntity.internalServerError().body("Erro ao fazer upload de arquivo.");
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Erro interno no servidor",
+                    "Erro ao fazer upload.",
+                    httpRequest.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-
-
     }
 
-    /**
-     * RF-018 – Excluir Arquivo
-     */
-    @DeleteMapping("/arquivos/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<Void> excluirArquivo(@PathVariable Long id, Authentication authentication) {
+    // ✅ ENDPOINT 02 - Excluir arquivo
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<?> excluirArquivo(@PathVariable Long id,
+                                            Authentication authentication,
+                                            HttpServletRequest httpRequest) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             arquivoService.excluirArquivo(id, usuarioLogado);
-            return ResponseEntity.noContent().build(); // 204 No Content
+            return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
+                            "Arquivo não encontrado",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorMessage(HttpStatus.FORBIDDEN.value(),
+                            "Acesso negado",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (Exception e) {
             logger.error("Erro inesperado ao excluir arquivo", e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro interno",
+                            "Erro ao excluir arquivo",
+                            httpRequest.getRequestURI()));
         }
     }
 
-    // RF-019: Mover arquivo
+    // ✅ ENDPOINT 03 - Mover arquivo
     @PutMapping("/{arquivoId}/mover/{pastaDestinoId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<?> moverArquivo(
-            @PathVariable Long arquivoId,
-            @PathVariable Long pastaDestinoId,
-            Authentication authentication
-            ) {
-
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<?> moverArquivo(@PathVariable Long arquivoId,
+                                          @PathVariable Long pastaDestinoId,
+                                          Authentication authentication,
+                                          HttpServletRequest httpRequest) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             ArquivoDTO arquivoMovido = arquivoService.moverArquivo(arquivoId, pastaDestinoId, usuarioLogado);
             return ResponseEntity.ok(arquivoMovido);
-
         } catch (RuntimeException e) {
-            // Erros de negócio: arquivo não encontrado, sem permissão, etc.
-            return ResponseEntity.badRequest().body(e.getMessage());
-
+            return ResponseEntity.badRequest()
+                    .body(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                            "Erro ao mover arquivo",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (IOException e) {
-            // Erros de I/O (problemas ao mover fisicamente o arquivo)
-            return ResponseEntity.internalServerError()
-                    .body("Erro ao mover arquivo no sistema de arquivos: " + e.getMessage());
-
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao mover arquivo no sistema de arquivos: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (Exception e) {
-            // Fallback para qualquer outra exceção inesperada
-            return ResponseEntity.internalServerError()
-                    .body("Erro inesperado ao mover o arquivo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro inesperado ao mover arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         }
     }
 
-    // RF-020: Copiar arquivo
+    // ✅ ENDPOINT 04 - Copiar arquivo
     @PostMapping("/{arquivoId}/copiar/{pastaDestinoId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<?> copiarArquivo(
-            @PathVariable Long arquivoId,
-            @PathVariable Long pastaDestinoId,
-            Authentication authentication
-            ) {
-
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<?> copiarArquivo(@PathVariable Long arquivoId,
+                                           @PathVariable Long pastaDestinoId,
+                                           Authentication authentication,
+                                           HttpServletRequest httpRequest) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             ArquivoDTO arquivoCopiado = arquivoService.copiarArquivo(arquivoId, pastaDestinoId, usuarioLogado);
             return ResponseEntity.ok(arquivoCopiado);
-
         } catch (RuntimeException e) {
-            // Erros de negócio: arquivo não encontrado, sem permissão, etc.
-            return ResponseEntity.badRequest().body(e.getMessage());
-
+            return ResponseEntity.badRequest()
+                    .body(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                            "Erro ao copiar arquivo",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (IOException e) {
-            // Erros de I/O (problemas ao copiar fisicamente o arquivo)
-            return ResponseEntity.internalServerError()
-                    .body("Erro ao copiar arquivo no sistema de arquivos: " + e.getMessage());
-
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao copiar arquivo no sistema de arquivos: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (Exception e) {
-            // Fallback para qualquer outra exceção inesperada
-            return ResponseEntity.internalServerError()
-                    .body("Erro inesperado ao copiar o arquivo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro inesperado ao copiar arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         }
     }
 
-
-    // RF-017: Renomear arquivo
+    // ✅ ENDPOINT 05 - Renomear arquivo
     @PutMapping("/renomear/{arquivoId}")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
-    public ResponseEntity<?> renomearArquivo(
-            @PathVariable Long arquivoId,
-            @RequestBody Map<String, String> requestBody, // Altere aqui
-            Authentication authentication
-    ) {
+    public ResponseEntity<?> renomearArquivo(@PathVariable Long arquivoId,
+                                             @RequestBody Map<String, String> requestBody,
+                                             Authentication authentication,
+                                             HttpServletRequest httpRequest) {
         String novoNome = requestBody.get("novoNome");
-
         if (novoNome == null || novoNome.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("O novo nome não pode ser vazio.");
+            return ResponseEntity.badRequest()
+                    .body(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                            "Campo obrigatório",
+                            "O novo nome não pode ser vazio",
+                            httpRequest.getRequestURI()));
         }
 
         try {
@@ -178,187 +211,293 @@ public class ArquivoController {
             ArquivoDTO arquivoRenomeado = arquivoService.renomearArquivo(arquivoId, novoNome, usuarioLogado);
             return ResponseEntity.ok(arquivoRenomeado);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                            "Erro ao renomear arquivo",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (IOException e) {
-            return ResponseEntity.internalServerError()
-                    .body("Erro ao renomear arquivo no sistema de arquivos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao renomear arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Erro inesperado ao renomear o arquivo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro inesperado ao renomear arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         }
     }
 
-    // RF-021: Substituir arquivo
+    // ✅ ENDPOINT 06 - Substituir arquivo
     @PostMapping("/{arquivoId}/substituir")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
-    public ResponseEntity<?> substituirArquivo(
-            @PathVariable Long arquivoId,
-            @RequestParam("arquivo") MultipartFile arquivoMultipart,
-            Authentication authentication) {
-
-        System.out.println("Chamada recebida para substituir arquivoId=" + arquivoId);
-
+    public ResponseEntity<?> substituirArquivo(@PathVariable Long arquivoId,
+                                               @RequestParam("arquivo") MultipartFile arquivoMultipart,
+                                               Authentication authentication,
+                                               HttpServletRequest httpRequest) {
         if (arquivoMultipart.isEmpty()) {
-            return ResponseEntity.badRequest().body("Arquivo enviado está vazio.");
+            return ResponseEntity.badRequest()
+                    .body(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                            "Arquivo vazio",
+                            "Arquivo enviado está vazio",
+                            httpRequest.getRequestURI()));
         }
 
         try {
-            // 1. Recuperar usuário logado
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
-            System.out.println("Usuário logado: " + usuarioLogado.getUsername());
-
-            // 2. Chamar serviço para substituir o arquivo
             ArquivoDTO arquivoAtualizado = arquivoService.substituirArquivo(arquivoId, arquivoMultipart, usuarioLogado);
-
-            System.out.println("Substituição concluída com sucesso!");
             return ResponseEntity.ok(arquivoAtualizado);
-
         } catch (ArquivoNaoEncontradoException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
+                            "Arquivo não encontrado",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (PermissaoNegadaException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorMessage(HttpStatus.FORBIDDEN.value(),
+                            "Acesso negado",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (IOException e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro de E/S ao substituir arquivo: " + e.getMessage());
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao substituir arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro inesperado ao substituir arquivo: " + e.getMessage());
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro inesperado ao substituir arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         }
     }
 
-    /**
-     * RF-022: Excluir múltiplos ou todos os arquivos de uma pasta
-     *
-     * Ex.: DELETE /api/arquivos/pasta/10/excluir
-     *      body = { "arquivoIds": [1,2,3] } ou vazio para todos
-     */
+    // ✅ ENDPOINT 07 - Excluir múltiplos arquivos de uma pasta
     @DeleteMapping("/pasta/{pastaId}/excluir")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
-    public ResponseEntity<?> excluirArquivosDaPasta(
-            @PathVariable Long pastaId,
-            @RequestBody(required = false) List<Long> arquivoIds,
-            Authentication authentication) {
-
+    public ResponseEntity<?> excluirArquivosDaPasta(@PathVariable Long pastaId,
+                                                    @RequestBody(required = false) List<Long> arquivoIds,
+                                                    Authentication authentication,
+                                                    HttpServletRequest httpRequest) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
-
             List<ArquivoDTO> arquivosExcluidos = arquivoService.excluirArquivosDaPasta(pastaId, arquivoIds, usuarioLogado);
-
             return ResponseEntity.ok(arquivosExcluidos);
-
         } catch (RuntimeException e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(e.getMessage());
-
+            return ResponseEntity.badRequest()
+                    .body(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                            "Erro ao excluir arquivos",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Erro ao excluir arquivos: " + e.getMessage());
-
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao excluir arquivos: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Erro inesperado: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro inesperado ao excluir arquivos: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         }
     }
 
+    // ✅ ENDPOINT 08 - Upload de múltiplos arquivos
     @PostMapping("/pasta/{pastaId}/upload-multiplos")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
-    public ResponseEntity<?> uploadMultiplosArquivos(
-            @PathVariable Long pastaId,
-            @RequestParam("arquivos") List<MultipartFile> arquivos,
-            Authentication authentication) {
-
+    public ResponseEntity<?> uploadMultiplosArquivos(@PathVariable Long pastaId,
+                                                     @RequestParam("arquivos") List<MultipartFile> arquivos,
+                                                     Authentication authentication,
+                                                     HttpServletRequest httpRequest) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
             List<ArquivoDTO> resultado = arquivoService.uploadArquivos(pastaId, arquivos, usuarioLogado);
             return ResponseEntity.ok(resultado);
-
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-
+            return ResponseEntity.badRequest()
+                    .body(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                            "Erro ao fazer upload",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (IOException e) {
-            return ResponseEntity.internalServerError()
-                    .body("Erro ao salvar arquivos: " + e.getMessage());
-
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao salvar arquivos: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Erro inesperado ao fazer upload: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro inesperado ao fazer upload: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         }
     }
 
-    /**
-     * Lista arquivos com ordenação, filtros e paginação
-     * Exemplo: GET /api/arquivos/pasta/1?page=0&size=10&sortField=nomeArquivo&sortDirection=asc&extensao=pdf
-     */
+    // ✅ ENDPOINT 09 - Listar arquivos com paginação, filtros e ordenação
     @GetMapping("/pasta/{pastaId}")
-    public ResponseEntity<Page<Arquivo>> listarArquivos(
-            @PathVariable Long pastaId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "nomeArquivo") String sortField,
-            @RequestParam(defaultValue = "asc") String sortDirection,
-            @RequestParam(required = false) String extensao) {
-
-        Page<Arquivo> arquivos = arquivoService.listarArquivosPorPasta(
-                pastaId,
-                page,
-                size,
-                sortField,
-                sortDirection,
-                extensao
-        );
-
-        return ResponseEntity.ok(arquivos);
+    public ResponseEntity<?> listarArquivos(@PathVariable Long pastaId,
+                                            @RequestParam(defaultValue = "0") int page,
+                                            @RequestParam(defaultValue = "10") int size,
+                                            @RequestParam(defaultValue = "nomeArquivo") String sortField,
+                                            @RequestParam(defaultValue = "asc") String sortDirection,
+                                            @RequestParam(required = false) String extensao,
+                                            HttpServletRequest httpRequest) {
+        try {
+            Page<Arquivo> arquivos = arquivoService.listarArquivosPorPasta(
+                    pastaId, page, size, sortField, sortDirection, extensao
+            );
+            return ResponseEntity.ok(arquivos);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
+                            "Pasta não encontrada",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
+        } catch (Exception e) {
+            logger.error("Erro ao listar arquivos", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro interno ao listar arquivos",
+                            httpRequest.getRequestURI()));
+        }
     }
 
-
-    // Download individual de arquivo
+    // ✅ ENDPOINT 10 - Download de arquivo por id
     @GetMapping("/download/arquivo/{arquivoId}")
-    public ResponseEntity<InputStreamResource> downloadArquivo(@PathVariable Long arquivoId) throws IOException {
-        Arquivo arquivo = arquivoService.buscarPorId(arquivoId);
-        Path caminho = Paths.get(arquivo.getCaminhoArmazenamento());
+    public ResponseEntity<?> downloadArquivo(@PathVariable Long arquivoId,
+                                             HttpServletRequest httpRequest) {
+        try {
+            Arquivo arquivo = arquivoService.buscarPorId(arquivoId);
+            Path caminho = Paths.get(arquivo.getCaminhoArmazenamento());
+            if (!Files.exists(caminho)) {
+                throw new RuntimeException("Arquivo físico não encontrado");
+            }
 
-        InputStreamResource resource = new InputStreamResource(Files.newInputStream(caminho));
+            InputStreamResource resource = new InputStreamResource(Files.newInputStream(caminho));
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + arquivo.getNomeArquivo() + "\"")
-                .contentLength(Files.size(caminho))
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + arquivo.getNomeArquivo() + "\"")
+                    .contentLength(Files.size(caminho))
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
+                            "Arquivo não encontrado",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao ler arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
+        } catch (Exception e) {
+            logger.error("Erro inesperado ao fazer download de arquivo", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro ao fazer download do arquivo: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
+        }
     }
 
-    // Download de pasta inteira em ZIP
+    // ✅ ENDPOINT 11 - Download de pasta inteira (zip)
     @GetMapping("/download/pasta/{pastaId}")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
-    public ResponseEntity<InputStreamResource> downloadPastaZip(@PathVariable Long pastaId) throws IOException {
-        Pasta pasta = pastaRepository.findById(pastaId)
-                .orElseThrow(() -> new RuntimeException("Pasta não encontrada"));
+    public ResponseEntity<?> downloadPastaZip(@PathVariable Long pastaId,
+                                              HttpServletRequest httpRequest) {
+        try {
+            Pasta pasta = pastaRepository.findById(pastaId)
+                    .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada"));
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            zipPastaRecursiva(pasta, "", zos);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+                zipPastaRecursiva(pasta, "", zos);
+            }
+
+            InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(baos.toByteArray()));
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + pasta.getNomePasta() + ".zip")
+                    .contentLength(baos.size())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
+                            "Pasta não encontrada",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de I/O",
+                            "Erro ao criar arquivo zip: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
+        } catch (Exception e) {
+            logger.error("Erro inesperado ao fazer download da pasta", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro ao fazer download da pasta: " + e.getMessage(),
+                            httpRequest.getRequestURI()));
         }
-
-        InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(baos.toByteArray()));
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + pasta.getNomePasta() + ".zip")
-                .contentLength(baos.size())
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
     }
 
-    // Método auxiliar para gerar ZIP recursivamente
+    // ✅ ENDPOINT 11 - Buscar arquivo por id
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE','BASIC')")
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id,
+                                         HttpServletRequest httpRequest) {
+        try {
+
+            Arquivo arquivo = arquivoService.buscarPorId(id);
+
+            return ResponseEntity.ok(arquivo);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage(
+                            HttpStatus.NOT_FOUND.value(),
+                            "Arquivo não encontrado",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()
+                    ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(
+                            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro interno",
+                            "Erro ao buscar arquivo",
+                            httpRequest.getRequestURI()
+                    ));
+        }
+    }
+    // ✅ Método Auxiliar para zipar pasta recursivamente
     private void zipPastaRecursiva(Pasta pasta, String caminhoRelativo, ZipOutputStream zos) throws IOException {
         String prefixo = caminhoRelativo.isEmpty() ? "" : caminhoRelativo + "/";
 
         // Adiciona arquivos da pasta
         for (Arquivo arquivo : pasta.getArquivos()) {
             Path caminhoArquivo = Paths.get(arquivo.getCaminhoArmazenamento());
-            zos.putNextEntry(new ZipEntry(prefixo + arquivo.getNomeArquivo()));
-            Files.copy(caminhoArquivo, zos);
-            zos.closeEntry();
+            if (Files.exists(caminhoArquivo)) {
+                zos.putNextEntry(new ZipEntry(prefixo + arquivo.getNomeArquivo()));
+                Files.copy(caminhoArquivo, zos);
+                zos.closeEntry();
+            }
         }
 
         // Recursão para subpastas
@@ -366,4 +505,6 @@ public class ArquivoController {
             zipPastaRecursiva(sub, prefixo + sub.getNomePasta(), zos);
         }
     }
+
+
 }

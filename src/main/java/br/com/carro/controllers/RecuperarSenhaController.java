@@ -4,6 +4,7 @@ import br.com.carro.entities.Senha.RecuperaSenhaRequestDto;
 import br.com.carro.entities.Senha.ResetSenhaRequestDto;
 import br.com.carro.exceptions.ErrorMessage;
 import br.com.carro.services.RecuperarSenhaService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class RecuperarSenhaController {
     @PostMapping("/gerar-senha")
     @Transactional
     @PreAuthorize("hasRole('ADMIN')") // CORRIGIDO: Era 'ROLE_ADMIN', agora é 'ADMIN'
-    public ResponseEntity<Object> gerarSenhaProvisoria(@RequestBody RecuperaSenhaRequestDto dto) {
+    public ResponseEntity<Object> gerarSenhaProvisoria(@RequestBody RecuperaSenhaRequestDto dto, HttpServletRequest request) {
         logger.info("Iniciando solicitação de geração de senha provisória para ID: {}", dto.id());
 
         try {
@@ -45,7 +46,13 @@ public class RecuperarSenhaController {
             return ResponseEntity.ok(new Mensagem("Senha provisória gerada: " + senhaProvisoria));
         } catch (IllegalArgumentException e) {
             logger.error("Erro ao gerar senha provisória: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorMessage(e.getMessage()));
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Usuário não encontrado",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
 
@@ -57,7 +64,8 @@ public class RecuperarSenhaController {
     @PostMapping("/redefinir-senha")
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE', 'BASIC')")
-    public ResponseEntity<Object> confirmarRedefinicao(@RequestBody ResetSenhaRequestDto dto) {
+    public ResponseEntity<Object> confirmarRedefinicao(@RequestBody ResetSenhaRequestDto dto,
+                                                       HttpServletRequest request) {
         logger.info("Tentando redefinir senha para username: {}", dto.username());
 
         try {
@@ -65,7 +73,13 @@ public class RecuperarSenhaController {
             return ResponseEntity.ok(new Mensagem("Senha redefinida com sucesso."));
         } catch (IllegalArgumentException e) {
             logger.error("Erro ao redefinir senha: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorMessage(e.getMessage()));
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Erro de validação",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
 

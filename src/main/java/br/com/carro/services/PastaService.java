@@ -107,7 +107,7 @@ public class PastaService {
 
 
     // ✅ Método adicional para listar pastas raiz
-    public java.util.List<Pasta> listarPastasRaiz(Usuario usuario) {
+    public java.util.List<Pasta> listarPastasRaiz(Usuario usuario) throws AccessDeniedException {
         if (usuario.isAdmin()) {
             return pastaRepository.findAllByPastaPaiIsNull();
         } else {
@@ -116,7 +116,7 @@ public class PastaService {
     }
 
     @Transactional
-    public List<PastaCompletaDTO> getTodasPastasCompletas(Usuario usuarioLogado, PastaFilterDTO filtro) {
+    public List<PastaCompletaDTO> getTodasPastasCompletas(Usuario usuarioLogado, PastaFilterDTO filtro) throws AccessDeniedException{
         List<Pasta> pastasRaiz = pastaRepository.findByPastaPaiIsNull();
 
         return pastasRaiz.stream()
@@ -127,7 +127,7 @@ public class PastaService {
 
     // ENDPOINT 02 - Método para busca de pastas e arquivos por id
     @Transactional(readOnly = true)
-    public PastaCompletaDTO getPastaCompletaPorId(Long idPasta, Usuario usuarioLogado, PastaFilterDTO filtro) {
+    public PastaCompletaDTO getPastaCompletaPorId(Long idPasta, Usuario usuarioLogado, PastaFilterDTO filtro)throws AccessDeniedException{
         Pasta pasta = pastaRepository.findById(idPasta)
                 .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada."));
 
@@ -145,7 +145,7 @@ public class PastaService {
      */
     // ENDPOINT 07 - Lista todas as pastas visíveis para o usuário logado
     @Transactional(readOnly = true)
-    public List<PastaCompletaDTO> listarPastasPorUsuario(Usuario usuarioLogado, PastaFilterDTO filtro) {
+    public List<PastaCompletaDTO> listarPastasPorUsuario(Usuario usuarioLogado, PastaFilterDTO filtro) throws AccessDeniedException {
         // Admin vê todas as pastas raiz, outros apenas as pastas onde tem permissão
         List<Pasta> pastasRaiz;
         if (usuarioLogado.isAdmin()) {
@@ -258,7 +258,7 @@ public class PastaService {
     }
 
     // Método auxiliar para exclusão recursiva
-    private void excluirSubPastasRecursivo(Pasta pasta) {
+    private void excluirSubPastasRecursivo(Pasta pasta)throws AccessDeniedException {
         for (Pasta sub : pasta.getSubPastas()) {
             excluirSubPastasRecursivo(sub);
 
@@ -518,7 +518,7 @@ public class PastaService {
         return novaPasta;
     }
 
-    private void copiarSubpastasEArquivos(Pasta pastaOriginal, Pasta pastaDestino, Path caminhoDestino, Usuario usuarioLogado) {
+    private void copiarSubpastasEArquivos(Pasta pastaOriginal, Pasta pastaDestino, Path caminhoDestino, Usuario usuarioLogado)throws AccessDeniedException {
         logger.debug("copiarSubpastasEArquivos: originalId={}, destinoId={}, caminhoDestino={}",
                 pastaOriginal.getId(), pastaDestino.getId(), caminhoDestino);
 

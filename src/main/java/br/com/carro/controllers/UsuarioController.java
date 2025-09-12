@@ -4,6 +4,7 @@ import br.com.carro.entities.Usuario.Usuario;
 import br.com.carro.entities.Usuario.UsuarioDto;
 import br.com.carro.exceptions.ErrorMessage;
 import br.com.carro.services.UsuarioService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,13 +132,18 @@ public class UsuarioController {
     @GetMapping("/logado")
     @Transactional
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getUsuarioLogado() {
+    public ResponseEntity<?> getUsuarioLogado(HttpServletRequest request) {
         UsuarioDto usuario = usuarioService.buscarUsuarioLogado();
         if (usuario != null) {
             return ResponseEntity.ok(usuario);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorMessage("Usuário autenticado não encontrado"));
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Recurso não encontrado",
+                    "Usuário autenticado não encontrado",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
 
