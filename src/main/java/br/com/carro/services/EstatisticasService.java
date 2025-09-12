@@ -1,7 +1,7 @@
 package br.com.carro.services;
 
 import br.com.carro.entities.Arquivo;
-import br.com.carro.entities.DTO.EstatisticasDTO;
+import br.com.carro.entities.DTO.DashboardDTO;
 import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import br.com.carro.repositories.UsuarioRepository;
@@ -25,7 +25,7 @@ public class EstatisticasService {
     private final UsuarioRepository usuarioRepository;
 
     @Transactional
-    public EstatisticasDTO obterEstatisticas(LocalDate inicio, LocalDate fim) {
+    public DashboardDTO obterEstatisticas(LocalDate inicio, LocalDate fim) {
 
         List<Arquivo> arquivos = arquivoRepository.findAll();
 
@@ -90,7 +90,7 @@ public class EstatisticasService {
                         LinkedHashMap::new
                 ));
 
-        return new EstatisticasDTO(
+        return new DashboardDTO(
                 totalArquivos,
                 totalPastas,
                 totalEspacoBytes,

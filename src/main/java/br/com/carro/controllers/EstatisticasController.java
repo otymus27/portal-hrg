@@ -1,6 +1,6 @@
 package br.com.carro.controllers;
 
-import br.com.carro.entities.DTO.EstatisticasDTO;
+import br.com.carro.entities.DTO.DashboardDTO;
 import br.com.carro.services.EstatisticasService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api/estatisticas")
+@RequestMapping("/api/estatisticassss")
 @RequiredArgsConstructor
 public class EstatisticasController {
 
     private final EstatisticasService estatisticasService;
 
     @GetMapping
-    public ResponseEntity<EstatisticasDTO> getEstatisticas(
+    public ResponseEntity<DashboardDTO> getEstatisticas(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
     ) {
