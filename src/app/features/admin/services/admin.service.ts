@@ -92,7 +92,7 @@ export class AdminService {
   private readonly apiUrlAdminPastas = 'http://localhost:8082/api/pastas';
   private readonly apiUrlAdminArquivos = 'http://localhost:8082/api/arquivos';
   private readonly apiUrlPublica = 'http://localhost:8082/api/publico';
-  private readonly apiUrlUsuarios = 'http://10.85.190.202:8082/api/usuario'; // ✅ Adicione a URL base para usuários
+  private readonly apiUrlUsuarios = 'http://localhost:8082/api/usuario'; // ✅ Adicione a URL base para usuários
 
   constructor(private http: HttpClient) {}
 
@@ -245,10 +245,6 @@ export class AdminService {
       responseType: 'text',
     });
   }
-  // // ---------------- Novo método: listar todos usuários ----------------
-  // listarUsuarios(): Observable<Usuario[]> {
-  //   return this.http.get<Usuario[]>(this.apiUrlUsuarios);
-  // }
 
   // ---------------- NOVO MÉTODO: listar todos usuários ----------------
   // ✅ Método corrigido para aceitar o parâmetro opcional 'username'
