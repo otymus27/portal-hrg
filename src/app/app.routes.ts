@@ -11,7 +11,7 @@ import { ExplorerComponent } from './features/public/pages/explorer/explorer.com
 
 // Importa o novo componente
 import { AdminExplorerComponent } from './features/admin/pages/admin-explorer/admin-explorer.component';
-
+import { DashboardComponent } from './features/admin/pages/dashboard/dashboard.component';
 
 export const routes: Routes = [
   // --- Rotas Públicas ---
@@ -34,19 +34,16 @@ export const routes: Routes = [
     component: Principal,
     canActivate: [AuthGuard], // <-- Adicione esta linha
     children: [
-      // Rota padrão para o componente 'Início'
-      { path: '', redirectTo: 'home', pathMatch: 'full' },
+      // Rota padrão para o componente 'Home ou Dashboard ou Pagina inicial da area administrativa'
+      // O Dashboard é a página inicial da área administrativa
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
-        path: 'home',
-        component: HomeComponentAdmin,
-        data: { roles: ['ADMIN', 'BASIC', 'GERENTE'] }, // ✅ Todos os perfis podem acessar
+        path: 'dashboard',
+        component: DashboardComponent,
+        data: { roles: ['ADMIN', 'BASIC', 'GERENTE'] },
       },
-
-      // Rotas com submenus para Marcas
-
+     
       // Rotas com submenus para Pastas
-      
-
       {
         path: 'pastas',
         children: [

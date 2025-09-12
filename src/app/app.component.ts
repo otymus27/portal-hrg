@@ -9,8 +9,8 @@ import { RouterOutlet } from '@angular/router'; // Geralmente usado para renderi
   styleUrl: './app.component.scss',
   // 'imports' e 'providers' não são necessários aqui se você estiver usando AppModule
   // RouterOutlet pode ser importado aqui se o AppComponent o utilizar diretamente
-  imports: [RouterOutlet] // Manter RouterOutlet aqui se ele for usado no template do AppComponent
+  imports: [RouterOutlet], // Manter RouterOutlet aqui se ele for usado no template do AppComponent
 })
 export class AppComponent {
-  title = 'app-carro';
+  title = 'app-portal';
 }

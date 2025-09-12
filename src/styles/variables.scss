@@ -1,0 +1,40 @@
+// src/styles/variables.scss
+
+// ----------------- Cores -----------------
+$primary-color: #0d6efd;
+$secondary-color: #6c757d;
+$success-color: #198754;
+$danger-color: #dc3545;
+$warning-color: #ffc107;
+$info-color: #0dcaf0;
+$light-color: #f8f9fa;
+$dark-color: #212529;
+$text-dark: #343a40;
+
+$text-muted: #6c757d;
+$card-background: #ffffff;
+$text-primary: #212529;
+$text-secondary: #6c757d;
+$border-color: #dee2e6;
+$shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+// ----------------- Tipografia -----------------
+$font-family-base: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+$font-size-base: 1rem;
+$font-weight-normal: 400;
+$font-weight-bold: 700;
+
+// ----------------- Espaçamentos -----------------
+$spacer: 1rem;
+$spacer-sm: 0.5rem;
+$spacer-lg: 1.5rem;
+$border-radius: 0.375rem;
+
+// ----------------- Sombras -----------------
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 2px 6px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+// ----------------- Transições -----------------
+$transition-fast: 0.2s ease-in-out;
+$transition-medium: 0.4s ease-in-out;

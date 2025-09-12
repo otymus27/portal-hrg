@@ -1,0 +1,74 @@
+.chart-card {
+  width: 100%;
+  max-width: 500px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: Arial, sans-serif;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .sort-buttons button {
+      margin-left: 0.3rem;
+      padding: 2px 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+  }
+
+  .metric-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+
+      .label {
+        width: 120px;
+        font-weight: 500;
+      }
+
+      .bar-container {
+        flex: 1;
+        height: 16px;
+        background: #e0e0e0;
+        border-radius: 8px;
+        margin: 0 0.5rem;
+        overflow: hidden;
+
+        .bar {
+          height: 100%;
+          width: 0;
+          transition: width 0.6s ease-in-out;
+          border-radius: 8px;
+        }
+      }
+
+      .value {
+        width: 60px;
+        text-align: right;
+        font-weight: 500;
+      }
+    }
+
+    .empty {
+      text-align: center;
+      color: #888;
+      font-style: italic;
+      padding: 0.5rem 0;
+    }
+  }
+}

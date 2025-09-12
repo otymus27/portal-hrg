@@ -1,0 +1,48 @@
+<div class="dashboard-container" *ngIf="!isLoading && dashboardData">
+  <div class="card-group">
+    <div class="card">
+      <h3>Total de Arquivos</h3>
+      <p class="metric">{{ dashboardData.totalArquivos }}</p>
+    </div>
+    <div class="card">
+      <h3>Total de Pastas</h3>
+      <p class="metric">{{ dashboardData.totalPastas }}</p>
+    </div>
+    <div class="card">
+      <h3>Espaço Total Utilizado</h3>
+      <p class="metric">{{ formatBytes(dashboardData.totalEspacoBytes) }}</p>
+    </div>
+  </div>
+  
+  <div class="chart-container">
+    <app-metric-list
+      [title]="'Uploads nos Últimos 30 Dias'"
+      [data]="dashboardData.uploadsPorDia"
+      [unit]="'uploads'">
+    </app-metric-list>
+
+    <app-metric-list
+      [title]="'Top Usuários por Upload'"
+      [data]="dashboardData.topUsuariosPorUpload"
+      [unit]="'arquivos'">
+    </app-metric-list>
+  </div>
+  
+  <div class="chart-container">
+    <app-metric-list
+      [title]="'Distribuição por Tipo de Arquivo'"
+      [data]="dashboardData.distribuicaoPorTipo"
+      [unit]="'arquivos'">
+    </app-metric-list>
+
+    <app-metric-list
+      [title]="'Consumo de Espaço por Tipo'"
+      [data]="dashboardData.topTiposPorEspaco"
+      [unit]="'bytes'">
+    </app-metric-list>
+  </div>
+</div>
+
+<div *ngIf="isLoading" class="loading-spinner">
+  Carregando dados do dashboard...
+</div>

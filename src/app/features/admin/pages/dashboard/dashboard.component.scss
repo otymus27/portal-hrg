@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+// Variáveis de cores
+$primary-color: #007bff;
+$secondary-color: #6c757d;
+$background-light: #f8f9fa;
+$card-background: #ffffff;
+$text-dark: #343a40;
+$text-muted: #6c757d;
+$border-color: #e9ecef;
+$shadow-light: rgba(0, 0, 0, 0.08);
+
+.dashboard-container {
+  font-family: 'Roboto', sans-serif;
+  color: $text-dark;
+  padding: 2.5rem; // Espaçamento interno generoso
+  background-color: $background-light;
+  min-height: calc(100vh - 60px); // Ajusta a altura para preencher a tela
+}
+
+.card-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); // Responsivo e flexível
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.card {
+  background-color: $card-background;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px $shadow-light;
+  padding: 2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: $text-muted;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .metric {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: $primary-color;
+    margin: 0.5rem 0 0;
+  }
+}
+
+.chart-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 5rem;
+  font-size: 1.25rem;
+  color: $secondary-color;
+  font-weight: 300;
+}

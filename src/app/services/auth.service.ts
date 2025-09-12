@@ -104,39 +104,41 @@ export class AuthService {
 
   // Envia as credenciais de login para o backend
   login(credenciais: any): Observable<any> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/login`, credenciais).pipe(
-      tap((response: AuthResponse) => {
-        // ✅ Apenas chama setToken() e deixa a lógica de extração lá
-        if (response.accessToken) {
-          this.setToken(response.accessToken);
-        }
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/login`, credenciais)
+      .pipe(
+        tap((response: AuthResponse) => {
+          // ✅ Apenas chama setToken() e deixa a lógica de extração lá
+          if (response.accessToken) {
+            this.setToken(response.accessToken);
+          }
 
-        // ✅ Adicione esta linha para depuração
-        console.log('Resposta completa do backend:', response);
-        console.log('Valor de senhaProvisoria:', response.senhaProvisoria);
-        // ✅ Adicione esta verificação
-        if (response.senhaProvisoria) {
-          console.log(
-            'Detectado senha provisória. Tentando navegar para /redefinir-senha...'
-          );
-          setTimeout(() => {
-            this.router.navigateByUrl('/redefinir-senha').then((success) => {
-              if (success) {
-                console.log('Navegação para redefinir-senha bem-sucedida!');
-              } else {
-                console.error('Falha na navegação para redefinir-senha.');
-              }
-            });
-          }, 100);
-        } else {
-          console.log(
-            'Login bem-sucedido. Redirecionando para a área principal.'
-          );
-          this.router.navigate(['/admin/home']);
-        }
-      }),
-      map(() => true)
-    );
+          // ✅ Adicione esta linha para depuração
+          console.log('Resposta completa do backend:', response);
+          console.log('Valor de senhaProvisoria:', response.senhaProvisoria);
+          // ✅ Adicione esta verificação
+          if (response.senhaProvisoria) {
+            console.log(
+              'Detectado senha provisória. Tentando navegar para /redefinir-senha...'
+            );
+            setTimeout(() => {
+              this.router.navigateByUrl('/redefinir-senha').then((success) => {
+                if (success) {
+                  console.log('Navegação para redefinir-senha bem-sucedida!');
+                } else {
+                  console.error('Falha na navegação para redefinir-senha.');
+                }
+              });
+            }, 100);
+          } else {
+            console.log(
+              'Login bem-sucedido. Redirecionando para a área principal.'
+            );
+            this.router.navigate(['/admin/dashboard']);
+          }
+        }),
+        map(() => true)
+      );
   }
 
   // Limpa o token e todas as informações do usuário do localStorage e redireciona para o login

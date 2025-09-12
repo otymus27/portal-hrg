@@ -2,10 +2,6 @@ import {
   coerceBooleanProperty
 } from "./chunk-AGZFHLKA.js";
 import {
-  FormsModule,
-  NgControl
-} from "./chunk-WVG5YPJN.js";
-import {
   ContentObserver,
   Platform,
   _CdkPrivateStyleLoader,
@@ -15,6 +11,10 @@ import {
   coerceElement,
   coerceNumberProperty
 } from "./chunk-UZRDOEGV.js";
+import {
+  FormsModule,
+  NgControl
+} from "./chunk-WVG5YPJN.js";
 import {
   CommonModule
 } from "./chunk-J3QXFMGW.js";
