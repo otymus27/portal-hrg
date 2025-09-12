@@ -4,8 +4,11 @@ import br.com.carro.entities.Arquivo;
 import br.com.carro.entities.Pasta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -21,23 +24,23 @@ import java.util.List;
  */
 public interface ArquivoRepository extends JpaRepository<Arquivo, Long> {
 
-    Page<Arquivo> findByPasta(Pasta pasta, Pageable pageable);
-
-    Page<Arquivo> findByPastaAndNomeArquivoEndingWithIgnoreCase(Pasta pasta, String extensao, Pageable pageable);
-
-
-    default Page<Arquivo> findByPastaAndExtensaoIgnoreCase(Pasta pasta, String extensao, Pageable pageable) {
-        if (!extensao.startsWith(".")) {
-            extensao = "." + extensao;
-        }
-        return findByPastaAndNomeArquivoEndingWithIgnoreCase(pasta, extensao, pageable);
-    }
-
-    // 🔥 Novo método para buscar por intervalo de datas
-    Page<Arquivo> findByPastaAndDataUploadBetween(Pasta pasta, LocalDateTime inicio, LocalDateTime fim, Pageable pageable);
-
 
     List<Arquivo> findByPastaId(Long pastaId);
 
+    // Busca todos os arquivos de uma pasta
+    List<Arquivo> findByPasta(Pasta pasta);
 
+    @Query("SELECT a FROM Arquivo a WHERE a.pasta = :pasta AND LOWER(a.nomeArquivo) LIKE LOWER(CONCAT('%', :nomeFiltro, '%'))")
+    List<Arquivo> findByPastaAndNomeContainingIgnoreCase(@Param("pasta") Pasta pasta,
+                                                         @Param("nomeFiltro") String nomeFiltro);
+
+    @Query("SELECT a FROM Arquivo a WHERE a.pasta = :pasta AND LOWER(a.tipoMime) = LOWER(:extensaoFiltro)")
+    List<Arquivo> findByPastaAndExtensaoIgnoreCase(@Param("pasta") Pasta pasta,
+                                                   @Param("extensaoFiltro") String extensaoFiltro);
+
+    @Query("SELECT a FROM Arquivo a WHERE a.pasta = :pasta AND LOWER(a.nomeArquivo) LIKE LOWER(CONCAT('%', :nomeFiltro, '%')) AND LOWER(a.tipoMime) = LOWER(:extensaoFiltro)")
+    List<Arquivo> findByPastaAndNomeAndExtensao(@Param("pasta") Pasta pasta,
+                                                @Param("nomeFiltro") String nomeFiltro,
+                                                @Param("extensaoFiltro") String extensaoFiltro);
 }
+

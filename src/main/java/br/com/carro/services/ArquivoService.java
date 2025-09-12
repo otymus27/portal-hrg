@@ -350,26 +350,83 @@ public class ArquivoService {
     }
 
 
-    public Page<Arquivo> listarArquivosPorPasta(Long pastaId,
-                                                int page,
-                                                int size,
+    /**
+     * Lista arquivos de uma pasta, com filtros opcionais de nome e extensão e ordenação.
+     *
+     * @param pastaId        ID da pasta
+     * @param nomeFiltro     Filtro por nome (opcional)
+     * @param extensaoFiltro Filtro por extensão (opcional)
+     * @param sortField      Campo para ordenar ("nomeArquivo", "dataCriacao", "tamanhoBytes" etc.)
+     * @param sortDirection  "asc" ou "desc"
+     * @param usuarioLogado  Usuário logado para validação de permissão
+     * @return Lista de arquivos filtrada e ordenada
+     */
+    public List<Arquivo> listarArquivosPorPasta(Long pastaId,
+                                                String nomeFiltro,
+                                                String extensaoFiltro,
                                                 String sortField,
                                                 String sortDirection,
-                                                String extensaoFiltro) {
-
+                                                Usuario usuarioLogado) {
+        // Busca a pasta
         Pasta pasta = pastaRepository.findById(pastaId)
                 .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada com ID: " + pastaId));
 
-        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Sort sort = Sort.by(direction, sortField);
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        if (extensaoFiltro != null && !extensaoFiltro.isBlank()) {
-            return arquivoRepository.findByPastaAndExtensaoIgnoreCase(pasta, extensaoFiltro, pageable);
+        // Verifica permissão
+        if (!pasta.getUsuariosComPermissao().contains(usuarioLogado)) {
+            throw new SecurityException("Usuário não possui permissão para acessar esta pasta.");
         }
 
-        return arquivoRepository.findByPasta(pasta, pageable);
+        // Busca arquivos da pasta
+        List<Arquivo> arquivos = arquivoRepository.findByPasta(pasta);
+
+        // Filtra por nome, se informado
+        if (nomeFiltro != null && !nomeFiltro.isBlank()) {
+            String nomeLower = nomeFiltro.toLowerCase();
+            arquivos = arquivos.stream()
+                    .filter(a -> a.getNomeArquivo() != null && a.getNomeArquivo().toLowerCase().contains(nomeLower))
+                    .collect(Collectors.toList());
+        }
+
+        // Filtra por extensão, se informado
+        if (extensaoFiltro != null && !extensaoFiltro.isBlank()) {
+            String extLower = extensaoFiltro.toLowerCase();
+            arquivos = arquivos.stream()
+                    .filter(a -> {
+                        String nome = a.getNomeArquivo();
+                        if (nome == null || !nome.contains(".")) return false;
+                        String arquivoExt = nome.substring(nome.lastIndexOf(".") + 1).toLowerCase();
+                        return arquivoExt.equals(extLower);
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        // Ordenação
+        Comparator<Arquivo> comparator;
+        switch (sortField) {
+            case "dataCriacao":
+                comparator = Comparator.comparing(Arquivo::getDataUpload);
+                break;
+            case "dataAtualizacao":
+                comparator = Comparator.comparing(Arquivo::getDataAtualizacao);
+                break;
+            case "tamanhoBytes":
+                comparator = Comparator.comparing(Arquivo::getTamanho);
+                break;
+            case "tipoMime":
+                comparator = Comparator.comparing(Arquivo::getTipoMime, Comparator.nullsLast(String::compareToIgnoreCase));
+                break;
+            default: // nomeArquivo
+                comparator = Comparator.comparing(Arquivo::getNomeArquivo, String.CASE_INSENSITIVE_ORDER);
+        }
+
+        if ("desc".equalsIgnoreCase(sortDirection)) {
+            comparator = comparator.reversed();
+        }
+
+        return arquivos.stream()
+                .sorted(comparator)
+                .collect(Collectors.toList());
     }
+
 
 }

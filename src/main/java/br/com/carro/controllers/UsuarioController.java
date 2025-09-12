@@ -4,6 +4,7 @@ import br.com.carro.entities.Usuario.Usuario;
 import br.com.carro.entities.Usuario.UsuarioDto;
 import br.com.carro.exceptions.ErrorMessage;
 import br.com.carro.services.UsuarioService;
+import jakarta.persistence.EntityExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -64,12 +65,26 @@ public class UsuarioController {
     // ✅ Apenas usuários com a role 'ADMIN' podem acessar este método para gerenciar usuários.
     @PreAuthorize("hasRole('ADMIN')") // CORRIGIDO: Era 'ROLE_ADMIN', agora é 'ADMIN'
     public ResponseEntity<String> cadastrar(@RequestBody Usuario usuario) {
+        if (usuario == null) {
+            return ResponseEntity.badRequest().body("Usuário não pode ser nulo.");
+        }
+
+        if (usuario.getPassword() == null || usuario.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body("Senha é obrigatória.");
+        }
+
+        // Encode da senha
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+
         try {
-            usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
-            String mensagem = this.usuarioService.cadastrar(usuario);
-            return new ResponseEntity<>(mensagem, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Erro ao cadastrar registro: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            String mensagem = usuarioService.cadastrar(usuario);
+            return ResponseEntity.status(HttpStatus.CREATED).body(mensagem);
+        } catch (EntityExistsException e) {
+            // Caso o usuário já exista
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            // Caso algum campo esteja inválido
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

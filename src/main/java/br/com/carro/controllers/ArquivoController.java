@@ -341,24 +341,31 @@ public class ArquivoController {
         }
     }
 
-    // ✅ ENDPOINT 09 - Listar arquivos com paginação, filtros e ordenação
+    // ✅ ENDPOINT 09 - Listar arquivos com filtros e ordenação
     @GetMapping("/pasta/{pastaId}")
     public ResponseEntity<?> listarArquivos(@PathVariable Long pastaId,
-                                            @RequestParam(defaultValue = "0") int page,
-                                            @RequestParam(defaultValue = "10") int size,
+                                            @RequestParam(required = false) String nome,
+                                            @RequestParam(required = false) String extensao,
                                             @RequestParam(defaultValue = "nomeArquivo") String sortField,
                                             @RequestParam(defaultValue = "asc") String sortDirection,
-                                            @RequestParam(required = false) String extensao,
+                                            Authentication authentication,
                                             HttpServletRequest httpRequest) {
         try {
-            Page<Arquivo> arquivos = arquivoService.listarArquivosPorPasta(
-                    pastaId, page, size, sortField, sortDirection, extensao
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            List<Arquivo> arquivos = arquivoService.listarArquivosPorPasta(
+                    pastaId, nome, extensao, sortField, sortDirection, usuarioLogado
             );
             return ResponseEntity.ok(arquivos);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
-                            "Pasta não encontrada",
+                            "Pasta não encontradass",
+                            e.getMessage(),
+                            httpRequest.getRequestURI()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorMessage(HttpStatus.FORBIDDEN.value(),
+                            "Acesso negado",
                             e.getMessage(),
                             httpRequest.getRequestURI()));
         } catch (Exception e) {
