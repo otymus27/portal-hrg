@@ -2,19 +2,24 @@ package br.com.carro.services;
 
 import br.com.carro.entities.Pasta;
 import br.com.carro.entities.Role.Role;
-import br.com.carro.entities.Role.RoleDto;
 import br.com.carro.entities.Usuario.Usuario;
-import br.com.carro.entities.Usuario.UsuarioDto;
+import br.com.carro.entities.DTO.UsuarioLogadoDTO;
+import br.com.carro.exceptions.ResourceNotFoundException;
 import br.com.carro.repositories.RoleRepository;
 import br.com.carro.repositories.UsuarioRepository;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import java.nio.file.AccessDeniedException;
 import java.util.HashSet;
+
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,11 +40,37 @@ public class UsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Cadastrar um novo registro diretamente com a entidade sem DTO's
-    public String cadastrar(Usuario usuario) {
-        // Salva o carro no banco de dados
-        this.usuarioRepository.save(usuario);
-        return "Cadastro feito com sucesso!";
+    // ✅ Método de cadastro com roles
+    @Transactional(noRollbackFor = EntityExistsException.class) // 👈 Evita rollback automático
+    public Usuario cadastrar(Usuario usuario, Set<Long> roleIds,Usuario usuarioLogado) throws  AccessDeniedException {
+        // Apenas admins podem excluir
+        if (!usuarioLogado.getRoles().stream().anyMatch(r -> r.getNome().equals("ADMIN"))) {
+            throw new AccessDeniedException("Usuário não possui permissão para excluir outro usuário.");
+        }
+        // Verifica se já existe um usuário com o mesmo username
+        if (usuarioRepository.existsByUsername(usuario.getUsername())) {
+            throw new EntityExistsException("Usuário com este username já existe.");
+        }
+
+        // Busca as roles pelos IDs
+        Set<Role> roles = new HashSet<>();
+        if (roleIds != null && !roleIds.isEmpty()) {
+            roles = roleRepository.findAllById(roleIds)
+                    .stream()
+                    .collect(Collectors.toSet());
+            if (roles.size() != roleIds.size()) {
+                throw new EntityNotFoundException("Uma ou mais roles informadas não existem.");
+            }
+        }
+
+        usuario.setRoles(roles);
+
+        try {
+            return usuarioRepository.save(usuario);
+        } catch (DataIntegrityViolationException e) {
+            // Captura erro de banco e converte para exceção mais amigável
+            throw new EntityExistsException("Usuário com este username já existe.");
+        }
     }
 
     // Buscar carro por ID
@@ -82,31 +113,44 @@ public class UsuarioService {
         return usuarioRepository.save(usuarioExistente);
     }
 
-    // Excluir um carro
-    public String excluir(Long id) throws Exception {
-        this.usuarioRepository.deleteById(id);
-        return "Exclusão feita com sucesso!";
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = {ResourceNotFoundException.class})
+    public void excluir(Long id, Usuario usuarioLogado) throws AccessDeniedException {
+        // Apenas admins podem excluir
+        if (!usuarioLogado.getRoles().stream().anyMatch(r -> r.getNome().equals("ADMIN"))) {
+            throw new AccessDeniedException("Usuário não possui permissão para excluir outro usuário.");
+        }
+
+        // Evita autoexclusão
+        if (id.equals(usuarioLogado.getId())) {
+            throw new IllegalArgumentException("Usuário não pode se auto-excluir.");
+        }
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com id " + id));
+
+        // Exclui usuário
+        usuario.getRoles().clear();
+
+        usuarioRepository.delete(usuario);
     }
 
 
-    public UsuarioDto buscarUsuarioLogado() {
-        // Obtém o login (username) do usuário autenticado no contexto de segurança
+    public UsuarioLogadoDTO buscarUsuarioLogado() {
         String login = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Optional<Usuario> optionalUsuario = usuarioRepository.findByUsername(login);
         if (optionalUsuario.isPresent()) {
             Usuario usuario = optionalUsuario.get();
-            Set<RoleDto> rolesDto = usuario.getRoles().stream()
-                    .map(role -> new RoleDto(role.getId(), role.getNome()))
-                    .collect(Collectors.toSet());
 
-            // ✅ LÓGICA ATUALIZADA: Obtém os IDs das pastas principais
             Set<Long> pastasIds = usuario.getPastasPrincipaisAcessadas().stream()
                     .map(Pasta::getId)
                     .collect(Collectors.toSet());
 
-            // ✅ AQUI ESTÁ A MUDANÇA: adicionando o ID do setor no DTO
-            return new UsuarioDto(
+            Set<UsuarioLogadoDTO.RoleDto> rolesDto = usuario.getRoles().stream()
+                    .map(role -> new UsuarioLogadoDTO.RoleDto(role.getId(), role.getNome()))
+                    .collect(Collectors.toSet());
+
+            return new UsuarioLogadoDTO(
                     usuario.getId(),
                     usuario.getUsername(),
                     pastasIds,

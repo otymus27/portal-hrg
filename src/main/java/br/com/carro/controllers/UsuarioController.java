@@ -1,23 +1,36 @@
 package br.com.carro.controllers;
 
+import br.com.carro.entities.DTO.UsuarioCreateDTO;
+import br.com.carro.entities.DTO.UsuarioResponseDTO;
 import br.com.carro.entities.Usuario.Usuario;
-import br.com.carro.entities.Usuario.UsuarioDto;
+import br.com.carro.entities.DTO.UsuarioLogadoDTO;
 import br.com.carro.exceptions.ErrorMessage;
+import br.com.carro.exceptions.ResourceNotFoundException;
 import br.com.carro.services.UsuarioService;
+import br.com.carro.utils.AuthService;
 import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+//import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.nio.file.AccessDeniedException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -26,12 +39,14 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
     private static final Logger logger = LoggerFactory.getLogger(UsuarioController.class);
     private final PasswordEncoder passwordEncoder;
+    private AuthService authService;
 
     public record Mensagem(String mensagem) {}
 
-    public UsuarioController(UsuarioService usuarioService, PasswordEncoder passwordEncoder) {
+    public UsuarioController(UsuarioService usuarioService, PasswordEncoder passwordEncoder, AuthService authService) {
         this.usuarioService = usuarioService;
         this.passwordEncoder = passwordEncoder;
+        this.authService = authService;
     }
 
     // Listar registros com paginação, filtros e ordenação
@@ -63,30 +78,71 @@ public class UsuarioController {
     @PostMapping()
     @Transactional
     // ✅ Apenas usuários com a role 'ADMIN' podem acessar este método para gerenciar usuários.
-    @PreAuthorize("hasRole('ADMIN')") // CORRIGIDO: Era 'ROLE_ADMIN', agora é 'ADMIN'
-    public ResponseEntity<String> cadastrar(@RequestBody Usuario usuario) {
-        if (usuario == null) {
-            return ResponseEntity.badRequest().body("Usuário não pode ser nulo.");
-        }
-
-        if (usuario.getPassword() == null || usuario.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body("Senha é obrigatória.");
-        }
-
-        // Encode da senha
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> cadastrar(@Valid @RequestBody UsuarioCreateDTO usuarioCreateDTO, Authentication authentication, HttpServletRequest request) throws AccessDeniedException{
 
         try {
-            String mensagem = usuarioService.cadastrar(usuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body(mensagem);
+            // Busca o usuário logado
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+
+            // Converte DTO para entidade
+            Usuario usuario = new Usuario();
+            usuario.setUsername(usuarioCreateDTO.username());
+            usuario.setPassword(passwordEncoder.encode(usuarioCreateDTO.password()));
+
+            // Extrai role IDs
+            Set<Long> roleIds = usuarioCreateDTO.roles()
+                    .stream()
+                    .map(UsuarioCreateDTO.RoleIdDto::id)
+                    .collect(Collectors.toSet());
+
+            // Chama o service
+            Usuario usuarioSalvo = usuarioService.cadastrar(usuario, roleIds, usuarioLogado);
+
+            // Converte para DTO de resposta
+            UsuarioResponseDTO resposta = UsuarioResponseDTO.fromEntity(usuarioSalvo);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+
         } catch (EntityExistsException e) {
-            // Caso o usuário já exista
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            // Caso algum campo esteja inválido
-            return ResponseEntity.badRequest().body(e.getMessage());
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.CONFLICT.value(),
+                    "Usuário já existe",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+
+        } catch (EntityNotFoundException | IllegalArgumentException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Dados inválidos",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
+        } catch (AccessDeniedException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.FORBIDDEN.value(),
+                    "Acesso negado",
+                    "Você não tem permissão para cadastrar usuários.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
+        } catch (Exception e) {
+            logger.error("Erro inesperado ao cadastrar usuário", e);
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Erro interno no servidor",
+                    "Erro ao cadastrar usuário.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+
 
     // Buscar carro por ID
     @GetMapping("/{id}")
@@ -127,28 +183,63 @@ public class UsuarioController {
         }
     }
 
-    // Excluir um carro
+    // Excluir um registro
     @DeleteMapping("/{id}")
     @Transactional
     // ✅ Apenas usuários com a role 'ADMIN' podem acessar este método para gerenciar usuários.
     @PreAuthorize("hasRole('ADMIN')") // CORRIGIDO: Era 'ROLE_ADMIN', agora é 'ADMIN'
-    public ResponseEntity<String> excluir(@PathVariable Long id) {
+    public ResponseEntity<?> excluirUsuario(@PathVariable Long id,
+                                            Authentication authentication,
+                                            HttpServletRequest request) {
         try {
-            // Chama o service que já verifica se o carro existe e lança exceção se não existir
-            String mensagem = this.usuarioService.excluir(id);
-            return new ResponseEntity<>(mensagem, HttpStatus.OK);
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            usuarioService.excluir(id, usuarioLogado);
+            return ResponseEntity.noContent().build();
+
+        }catch (ResourceNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Usuário não encontrado",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Dados inválidos",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
+        } catch (AccessDeniedException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.FORBIDDEN.value(),
+                    "Acesso negado",
+                    "Você não tem permissão para excluir este usuário.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
         } catch (Exception e) {
-            return new ResponseEntity<>("Erro ao excluir registro: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Erro interno no servidor",
+                    "Erro ao excluir o usuário.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
-
 
     // Método para buscar o usuário logado
     @GetMapping("/logado")
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getUsuarioLogado(HttpServletRequest request) {
-        UsuarioDto usuario = usuarioService.buscarUsuarioLogado();
+        UsuarioLogadoDTO usuario = usuarioService.buscarUsuarioLogado();
         if (usuario != null) {
             return ResponseEntity.ok(usuario);
         } else {

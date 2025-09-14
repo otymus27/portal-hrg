@@ -20,4 +20,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // ✅ Esta query é CRUCIAL para carregar as roles junto com o usuário
     //@Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.roles WHERE u.username = :username")
     Optional<Usuario> findByUsername(String username);
+
+    boolean existsByUsername(String username);
 }
