@@ -1,6 +1,6 @@
 <div class="explorer-container card shadow-sm">
   <div class="card-body p-4">
-    <!-- Cabeçalho fixo -->
+    <!-- Cabeçalho -->
     <div
       class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded mb-3"
     >
@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <!-- Breadcrumb fixo -->
+    <!-- Breadcrumb -->
     <nav class="breadcrumb mt-3 mb-3">
       <span
         class="breadcrumb-item text-primary"
@@ -42,7 +42,7 @@
       </ng-container>
     </nav>
 
-    <!-- Botões de ações fixos -->
+    <!-- Botões de ações -->
     <div class="mb-3 d-flex align-items-center gap-2">
       <button
         class="btn btn-outline-secondary"
@@ -66,7 +66,7 @@
       <p class="mt-2">Carregando conteúdo...</p>
     </div>
 
-    <!-- Lista rolável -->
+    <!-- Lista de conteúdo -->
     <div class="lista-scrollable" *ngIf="!loading">
       <table class="table table-hover mb-0">
         <thead>
@@ -90,13 +90,13 @@
           </tr>
         </thead>
         <tbody>
+          <!-- Pastas -->
           <tr *ngFor="let pasta of pastas">
             <td>
               <input
                 type="checkbox"
                 [checked]="isSelecionado(pasta)"
                 (change)="toggleSelecao(pasta)"
-                (click)="$event.stopPropagation()"
               />
             </td>
             <td
@@ -104,98 +104,87 @@
               style="cursor: pointer"
               (click)="abrirPasta(pasta)"
             >
-              📁 {{ pasta.nomePasta || "(Sem nome)" }}
+              📁 {{ pasta.nomePasta }}
             </td>
             <td class="text-end">
               <button
                 class="btn btn-info btn-sm me-1"
-                (click)="abrirModalPermissao(pasta); $event.stopPropagation()"
-                title="Gerenciar Permissões"
+                (click)="abrirModalPermissao(pasta)"
               >
                 <i class="bi bi-person-check-fill"></i>
               </button>
               <button
                 class="btn btn-warning btn-sm me-1"
-                (click)="abrirModalRenomear(pasta); $event.stopPropagation()"
-                title="Renomear"
+                (click)="abrirModalRenomear(pasta)"
               >
                 <i class="bi bi-pencil-square"></i>
               </button>
-
               <button
                 class="btn btn-primary btn-sm me-1"
-                (click)="abrirModalMoverPasta(pasta); $event.stopPropagation()"
+                (click)="abrirModalMoverPasta(pasta)"
               >
                 <i class="bi bi-arrow-right-square"></i>
               </button>
-
               <button
                 class="btn btn-info btn-sm me-1"
-                (click)="abrirModalCopiarPasta(pasta); $event.stopPropagation()"
+                (click)="abrirModalCopiarPasta(pasta)"
               >
                 <i class="bi bi-files"></i>
               </button>
-
               <button
                 class="btn btn-danger btn-sm"
-                (click)="abrirModalExcluir(pasta); $event.stopPropagation()"
-                title="Excluir"
+                (click)="abrirModalExcluir(pasta)"
               >
                 <i class="bi bi-trash"></i>
               </button>
             </td>
           </tr>
 
+          <!-- Arquivos -->
           <tr *ngFor="let arquivo of arquivos">
             <td>
               <input
                 type="checkbox"
                 [checked]="isSelecionado(arquivo)"
                 (change)="toggleSelecao(arquivo)"
-                (click)="$event.stopPropagation()"
               />
             </td>
             <td>📄 {{ arquivo.nome }}</td>
             <td class="text-end">
               <button
                 class="btn btn-success btn-sm me-1"
-                (click)="downloadArquivo(arquivo); $event.stopPropagation()"
-                title="Download"
+                (click)="downloadArquivo(arquivo)"
               >
                 <i class="bi bi-download"></i>
               </button>
               <button
                 class="btn btn-warning btn-sm me-1"
-                (click)="abrirModalRenomear(arquivo); $event.stopPropagation()"
-                title="Renomear"
+                (click)="abrirModalRenomear(arquivo)"
               >
                 <i class="bi bi-pencil-square"></i>
               </button>
               <button
-                class="btn btn-danger btn-sm"
-                (click)="abrirModalExcluir(arquivo); $event.stopPropagation()"
-                title="Excluir"
-              >
-                <i class="bi bi-trash"></i>
-              </button>
-
-              <!-- Botão de copiar arquivo -->
-              <button
                 class="btn btn-info btn-sm me-1"
-                (click)="abrirModalCopiar(arquivo); $event.stopPropagation()"
+                (click)="abrirModalCopiar(arquivo)"
               >
                 <i class="bi bi-files"></i>
               </button>
-
               <button
                 class="btn btn-info btn-sm me-1"
-                (click)="abrirModalMoverArquivo(arquivo); $event.stopPropagation()"
+                (click)="abrirModalMoverArquivo(arquivo)"
               >
                 <i class="bi bi-arrows-move"></i>
+              </button>
+              <button
+                class="btn btn-danger btn-sm"
+                (click)="abrirModalExcluir(arquivo)"
+              >
+                <i class="bi bi-trash"></i>
               </button>
             </td>
           </tr>
 
+          <!-- Vazio -->
           <tr *ngIf="pastas.length === 0 && arquivos.length === 0">
             <td colspan="3" class="text-center text-muted">
               Nenhum conteúdo encontrado nesta pasta.
@@ -207,9 +196,10 @@
   </div>
 </div>
 
-<!------------------- MODAIS------------->
+<!-- =================== MODAIS =================== -->
+<!-- Criar Pasta -->
 <div class="modal-backdrop" *ngIf="modalCriarPastaAberto">
-  <div class="modal-custom permissao-modal">
+  <div class="modal-custom">
     <h3>Criar Nova Pasta</h3>
     <input
       type="text"
@@ -217,17 +207,13 @@
       placeholder="Nome da pasta"
       class="form-control mb-3"
     />
-
-    <div class="d-flex justify-content-between gap-4">
-      <div class="w-50">
-        <h5>Usuários com Permissão</h5>
-        <div
-          class="permissoes-lista list-group"
-          style="max-height: 250px; overflow-y: auto"
-        >
-          <div
+    <div class="d-flex gap-3">
+      <div class="flex-fill">
+        <h6>Usuários Selecionados</h6>
+        <ul class="list-group">
+          <li
             *ngFor="let u of usuariosSelecionados"
-            class="list-group-item d-flex justify-content-between align-items-center"
+            class="list-group-item d-flex justify-content-between"
           >
             {{ u.username }}
             <button
@@ -236,35 +222,20 @@
             >
               <i class="bi bi-x"></i>
             </button>
-          </div>
-          <div
-            *ngIf="usuariosSelecionados.length === 0"
-            class="text-muted text-center p-3"
-          >
-            Nenhum usuário com permissão.
-          </div>
-        </div>
+          </li>
+        </ul>
       </div>
-
-      <div
-        class="w-50 d-flex flex-column align-items-center justify-content-center"
-      >
-        <h5>Adicionar Usuário</h5>
+      <div class="d-flex align-items-center">
         <button
-          class="btn btn-success mt-2"
+          class="btn btn-success"
           (click)="abrirModalSelecionarUsuario('criarPasta')"
         >
-          <i class="bi bi-person-plus me-2"></i>Selecionar
+          <i class="bi bi-person-plus"></i> Adicionar
         </button>
       </div>
     </div>
-
     <div class="modal-actions mt-3 text-end">
-      <button
-        class="btn btn-primary me-2"
-        (click)="criarPasta()"
-        [disabled]="!novoNomePasta"
-      >
+      <button class="btn btn-primary me-2" (click)="criarPasta()">
         Salvar
       </button>
       <button class="btn btn-secondary" (click)="fecharModalCriarPasta()">
@@ -274,17 +245,15 @@
   </div>
 </div>
 
+<!-- Renomear -->
 <div class="modal-backdrop" *ngIf="modalRenomearAberto">
   <div class="modal-custom">
-    <h3>Renomear {{ isPasta(itemParaRenomear!) ? "Pasta" : "Arquivo" }}</h3>
-    <input
-      type="text"
-      [(ngModel)]="novoNomeItem"
-      placeholder="Novo nome"
-      class="form-control mb-4"
-    />
-    <div class="modal-actions">
-      <button class="btn btn-primary" (click)="renomearItem()">Salvar</button>
+    <h3>Renomear</h3>
+    <input type="text" [(ngModel)]="novoNomeItem" class="form-control mb-3" />
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="renomearItem()">
+        Salvar
+      </button>
       <button class="btn btn-secondary" (click)="fecharModalRenomear()">
         Cancelar
       </button>
@@ -292,45 +261,33 @@
   </div>
 </div>
 
+<!-- Upload -->
 <div class="modal-backdrop" *ngIf="modalUploadAberto">
   <div class="modal-custom">
     <h3>Upload de Arquivos</h3>
     <input
       type="file"
       (change)="onArquivosSelecionados($event)"
-      class="form-control mb-4"
       multiple
+      class="form-control mb-3"
     />
-    <div *ngIf="arquivosParaUpload.length > 0" class="mb-4">
-      <p>Arquivos para upload:</p>
-      <div class="list-group-scrollable">
-        <div
-          *ngFor="let arquivo of arquivosParaUpload"
-          class="list-group-item d-flex justify-content-between align-items-center"
-        >
-          <div>
-            <strong>{{ arquivo.name }}</strong>
-            <small class="text-muted"
-              >({{ arquivo.size | number }} bytes)</small
-            >
-          </div>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-danger rounded-circle"
-            (click)="removerArquivoSelecionado(arquivo)"
-          >
-            <i class="bi bi-x"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button
-        class="btn btn-primary"
-        (click)="uploadArquivos()"
-        [disabled]="arquivosParaUpload.length === 0"
+    <ul class="list-group mb-3">
+      <li
+        *ngFor="let f of arquivosParaUpload"
+        class="list-group-item d-flex justify-content-between"
       >
-        Upload
+        {{ f.name }}
+        <button
+          class="btn btn-danger btn-sm"
+          (click)="removerArquivoSelecionado(f)"
+        >
+          Remover
+        </button>
+      </li>
+    </ul>
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="uploadArquivos()">
+        Enviar
       </button>
       <button class="btn btn-secondary" (click)="fecharModalUpload()">
         Cancelar
@@ -339,16 +296,16 @@
   </div>
 </div>
 
+<!-- Excluir -->
 <div class="modal-backdrop" *ngIf="modalExcluirAberto">
   <div class="modal-custom">
-    <h3>Confirmação de Exclusão</h3>
+    <h3>Confirma Exclusão</h3>
     <p>
-      Tem certeza que deseja excluir
-      <strong>{{ getNomeItem(itemParaExcluir) }}</strong
+      Deseja realmente excluir <b>{{ getNomeItem(itemParaExcluir) }}</b
       >?
     </p>
-    <div class="modal-actions">
-      <button class="btn btn-danger" (click)="confirmarExclusao()">
+    <div class="text-end">
+      <button class="btn btn-danger me-2" (click)="confirmarExclusao()">
         Excluir
       </button>
       <button class="btn btn-secondary" (click)="fecharModalExcluir()">
@@ -358,25 +315,16 @@
   </div>
 </div>
 
+<!-- Excluir Selecionados -->
 <div class="modal-backdrop" *ngIf="modalExcluirSelecionadosAberto">
   <div class="modal-custom">
-    <h3>Confirmação de Exclusão</h3>
-    <p>
-      Tem certeza que deseja excluir
-      <strong>{{ itensSelecionados.length }}</strong>
-      {{
-        itensSelecionados.length === 1
-          ? "item selecionado"
-          : "itens selecionados"
-      }}?
-    </p>
-    <ul class="list-group mb-4">
-      <li *ngFor="let item of itensSelecionados" class="list-group-item py-1">
-        {{ getNomeItem(item) }}
-      </li>
-    </ul>
-    <div class="modal-actions">
-      <button class="btn btn-danger" (click)="confirmarExclusaoSelecionados()">
+    <h3>Excluir Itens Selecionados</h3>
+    <p>Deseja excluir os itens selecionados?</p>
+    <div class="text-end">
+      <button
+        class="btn btn-danger me-2"
+        (click)="confirmarExclusaoSelecionados()"
+      >
         Excluir
       </button>
       <button
@@ -389,31 +337,17 @@
   </div>
 </div>
 
-<!-- Modal Copiar Arquivo -->
+<!-- Copiar Arquivo -->
 <div class="modal-backdrop" *ngIf="modalCopiarAberto">
   <div class="modal-custom">
-    <h3>Copiar Arquivo: {{ arquivoParaCopiar?.nome }}</h3>
-
-    <label for="pastaDestino">Selecionar pasta de destino:</label>
-    <select
-      id="pastaDestino"
-      class="form-select mb-3"
-      [(ngModel)]="pastaDestinoSelecionada"
-    >
-      <option
-        *ngFor="let pasta of pastasDisponiveisParaCopiar"
-        [ngValue]="pasta"
-      >
-        {{ pasta.nomePasta }}
+    <h3>Copiar Arquivo</h3>
+    <select [(ngModel)]="pastaDestinoSelecionada" class="form-select mb-3">
+      <option *ngFor="let p of pastasDisponiveisParaCopiar" [ngValue]="p">
+        {{ p.nomePasta }}
       </option>
     </select>
-
-    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
-      <button
-        class="btn btn-primary"
-        [disabled]="!pastaDestinoSelecionada"
-        (click)="copiarArquivo()"
-      >
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="copiarArquivo()">
         Copiar
       </button>
       <button class="btn btn-secondary" (click)="fecharModalCopiar()">
@@ -423,28 +357,17 @@
   </div>
 </div>
 
-<!-- Modal Copiar Pasta -->
+<!-- Copiar Pasta -->
 <div class="modal-backdrop" *ngIf="modalCopiarPastaAberto">
   <div class="modal-custom">
-    <h3>Copiar Pasta: {{ pastaParaCopiar?.nomePasta }}</h3>
-
-    <label>Selecionar pasta destino:</label>
-    <select
-      class="form-select mb-3"
-      [(ngModel)]="pastaDestinoSelecionada"
-    >
-      <option [ngValue]="null">Raiz</option>
-      <option *ngFor="let pasta of pastasDisponiveisParaCopiar" [ngValue]="pasta">
-        {{ pasta.nomePasta }}
+    <h3>Copiar Pasta</h3>
+    <select [(ngModel)]="pastaDestinoSelec" class="form-select mb-3">
+      <option *ngFor="let p of pastasDisponiveisParaCopiar" [ngValue]="p">
+        {{ p.nomePasta }}
       </option>
     </select>
-
-    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
-      <button
-        class="btn btn-primary"
-        (click)="copiarPasta()"
-        [disabled]="!pastaParaCopiar"
-      >
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="copiarPasta()">
         Copiar
       </button>
       <button class="btn btn-secondary" (click)="fecharModalCopiarPasta()">
@@ -454,69 +377,35 @@
   </div>
 </div>
 
-<!-- Modal Mover ou Recortar Pasta -->
+<!-- Mover Pasta -->
 <div class="modal-backdrop" *ngIf="modalMoverPastaAberto">
   <div class="modal-custom">
     <h3>Mover Pasta</h3>
-    <p>
-      Selecione a pasta de destino para 
-      <strong>{{ pastaParaMover?.nomePasta }}</strong>:
-    </p>
-
-    <select
-      class="form-select mb-3"
-      [(ngModel)]="pastaDestinoMover"
-    >
-      <option [ngValue]="null">Raiz</option>
-      <option *ngFor="let pasta of pastasDisponiveisParaMover" [ngValue]="pasta">
-        {{ pasta.nomePasta }}
+    <select [(ngModel)]="pastaDestinoMover" class="form-select mb-3">
+      <option *ngFor="let p of pastasDisponiveisParaMover" [ngValue]="p">
+        {{ p.nomePasta }}
       </option>
     </select>
-
-    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
-      <button
-        class="btn btn-primary"
-        (click)="moverPasta()"
-        [disabled]="!pastaParaMover"
-      >
-        Mover
-      </button>
-      <button
-        class="btn btn-secondary"
-        (click)="fecharModalMoverPasta()"
-      >
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="moverPasta()">Mover</button>
+      <button class="btn btn-secondary" (click)="fecharModalMoverPasta()">
         Cancelar
       </button>
     </div>
   </div>
 </div>
 
-<!-- Modal Mover Arquivo -->
+<!-- Mover Arquivo -->
 <div class="modal-backdrop" *ngIf="modalMoverArquivoAberto">
   <div class="modal-custom">
     <h3>Mover Arquivo</h3>
-    <p>
-      Selecionar a pasta de destino para:
-      <strong>{{ arquivoParaMover?.nome }}</strong>
-    </p>
-
-    <label for="pastaDestino">Pasta de Destino:</label>
-    <select
-      id="pastaDestino"
-      class="form-select mb-3"
-      [(ngModel)]="pastaDestinoArquivo"
-    >
-      <option *ngFor="let pasta of pastasDisponiveisParaMover" [ngValue]="pasta">
-        {{ pasta.nomePasta }}
+    <select [(ngModel)]="pastaDestinoArquivo" class="form-select mb-3">
+      <option *ngFor="let p of pastasDisponiveisParaMover" [ngValue]="p">
+        {{ p.nomePasta }}
       </option>
     </select>
-
-    <div class="modal-actions mt-3 d-flex justify-content-end gap-2">
-      <button
-        class="btn btn-primary"
-        (click)="moverArquivo()"
-        [disabled]="!pastaDestinoArquivo"
-      >
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="moverArquivo()">
         Mover
       </button>
       <button class="btn btn-secondary" (click)="fecharModalMoverArquivo()">
@@ -526,47 +415,32 @@
   </div>
 </div>
 
+<!-- Permissões -->
 <div class="modal-backdrop" *ngIf="modalPermissaoAberto">
   <div class="modal-custom">
-    <h3>Permissões para "{{ pastaParaPermissao?.nomePasta }}"</h3>
-    <div class="row g-4 mt-3">
-      <div class="col-md-6">
-        <h5>Usuários com Permissão</h5>
-        <div class="list-group-scrollable">
-          <div
-            *ngFor="let u of usuariosComPermissao"
-            class="list-group-item d-flex justify-content-between align-items-center"
-          >
-            <span>{{ u.username }}</span>
-            <button
-              class="btn btn-danger btn-sm rounded-circle"
-              (click)="removerUsuarioPermissao(u)"
-            >
-              <i class="bi bi-x"></i>
-            </button>
-          </div>
-          <div
-            *ngIf="usuariosComPermissao.length === 0"
-            class="text-muted text-center p-3"
-          >
-            Nenhum usuário com permissão.
-          </div>
-        </div>
-      </div>
-      <div
-        class="col-md-6 d-flex flex-column align-items-center justify-content-center"
+    <h3>Permissões - {{ pastaParaPermissao?.nomePasta }}</h3>
+    <ul class="list-group mb-3">
+      <li
+        *ngFor="let u of usuariosComPermissao"
+        class="list-group-item d-flex justify-content-between"
       >
-        <h5>Adicionar Usuário</h5>
+        {{ u.username }}
         <button
-          class="btn btn-success mt-2"
-          (click)="abrirModalSelecionarUsuario('permissao')"
+          class="btn btn-danger btn-sm"
+          (click)="removerUsuarioPermissao(u)"
         >
-          <i class="bi bi-person-plus me-2"></i>Selecionar
+          Remover
         </button>
-      </div>
-    </div>
-    <div class="modal-actions mt-4">
-      <button class="btn btn-primary" (click)="atualizarPermissoes()">
+      </li>
+    </ul>
+    <button
+      class="btn btn-success mb-3"
+      (click)="abrirModalSelecionarUsuario('permissao')"
+    >
+      <i class="bi bi-person-plus"></i> Adicionar Usuário
+    </button>
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="atualizarPermissoes()">
         Salvar
       </button>
       <button class="btn btn-secondary" (click)="fecharModalPermissao()">
@@ -576,8 +450,35 @@
   </div>
 </div>
 
+<!-- Modal Selecionar Usuário -->
 <app-modal-usuario
   *ngIf="modalSelecionarUsuarioAberto"
-  [usuariosExcluidosIds]="usuariosComPermissaoIds"
+  [usuariosExcluidosIds]="usuariosExcluidosIds"
   (usuarioSelecionado)="onUsuarioSelecionado($event)"
-></app-modal-usuario>
+>
+</app-modal-usuario>
+
+<!-- ... seu HTML de admin-explorer ... -->
+
+<!-- Toast local -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div
+    *ngFor="let toast of toastService.messages$ | async"
+    class="toast show"
+    [ngClass]="{
+      'bg-success': toast.type === 'success',
+      'bg-danger': toast.type === 'danger',
+      'bg-info': toast.type === 'info'
+    }"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+    <div class="toast-header border-0 bg-transparent text-white">
+      <strong class="me-auto text-capitalize">{{ toast.type }}</strong>
+    </div>
+    <div class="toast-body text-white">
+      {{ toast.message }}
+    </div>
+  </div>
+</div>

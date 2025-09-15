@@ -18,8 +18,8 @@ import {
   ɵɵdirectiveInject,
   ɵɵlistener
 } from "./chunk-6SZJNWHU.js";
-import "./chunk-FFZIAYYX.js";
 import "./chunk-6Q4RANH6.js";
+import "./chunk-FFZIAYYX.js";
 import "./chunk-CXCX2JKZ.js";
 
 // node_modules/mdb-angular-ui-kit/fesm2022/mdb-angular-ui-kit-ripple.mjs

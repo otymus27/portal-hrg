@@ -16,6 +16,8 @@ import { forkJoin, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Paginacao } from '../../../../models/paginacao';
 import { ModalUsuarioComponent } from '../modal-usuario/modal-usuario.component';
+import { ErrorMessage } from '../../../../services/usuario.service';
+import { ToastService, ToastMessage } from '../../../../services/toast.service';
 
 @Component({
   selector: 'app-admin-explorer',
@@ -72,7 +74,8 @@ export class AdminExplorerComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    public toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -154,10 +157,12 @@ export class AdminExplorerComponent implements OnInit {
 
     this.adminService.criarPasta(body).subscribe({
       next: () => {
+        this.toastService.showSuccess('Pasta criada com sucesso!');
         this.recarregarConteudo();
         this.fecharModalCriarPasta();
       },
-      error: (err: any) => this.handleError('Erro ao criar pasta', err),
+      error: (err: ErrorMessage) =>
+        this.handleError('Erro ao criar pasta', err),
     });
   }
 
@@ -175,22 +180,33 @@ export class AdminExplorerComponent implements OnInit {
 
   renomearItem(): void {
     if (!this.itemParaRenomear || !this.novoNomeItem) return;
-
+  
+    const novoNome = this.novoNomeItem.trim();
+  
+    // Nome atual normalizado
+    const nomeAtual = this.isPasta(this.itemParaRenomear)
+      ? (this.itemParaRenomear.nomePasta || '').trim()
+      : (this.itemParaRenomear.nome || '').trim();
+  
+    // Se não mudou (ignorando case), não chama o back-end
+    if (nomeAtual.toLowerCase() === novoNome.toLowerCase()) {
+      this.toastService.showInfo('O nome não foi alterado.');
+      this.fecharModalRenomear();
+      return;
+    }
+  
     const request: Observable<any> = this.isPasta(this.itemParaRenomear)
-      ? this.adminService.renomearPasta(
-          this.itemParaRenomear.id,
-          this.novoNomeItem
-        )
-      : this.adminService.renomearArquivo(
-          this.itemParaRenomear.id,
-          this.novoNomeItem
-        );
-
+      ? this.adminService.renomearPasta(this.itemParaRenomear.id, novoNome)
+      : this.adminService.renomearArquivo(this.itemParaRenomear.id, novoNome); // se tiver similar para arquivo
+  
     request.subscribe({
-      next: () => this.recarregarConteudo(),
-      error: (err: any) => this.handleError('Erro ao renomear item', err),
+      next: () => {
+        this.toastService.showSuccess('Nome alterado com sucesso!');
+        this.recarregarConteudo();
+      },
+      error: (err) => this.handleError('Erro ao renomear item', err),
     });
-
+  
     this.fecharModalRenomear();
   }
 
@@ -376,219 +392,227 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   //-----------------Copiar Arquivo-----------------
-   // ---Fazer copia de arquivos para outra pasta
+  // ---Fazer copia de arquivos para outra pasta
   // ---------------- Copiar Arquivo ----------------
-// Variáveis novas
-modalCopiarAberto = false;
-arquivoParaCopiar: ArquivoAdmin | null = null;
-pastaDestinoSelecionada: PastaAdmin | null = null;
-pastasDisponiveisParaCopiar: PastaAdmin[] = [];
+  // Variáveis novas
+  modalCopiarAberto = false;
+  arquivoParaCopiar: ArquivoAdmin | null = null;
+  pastaDestinoSelecionada: PastaAdmin | null = null;
+  pastasDisponiveisParaCopiar: PastaAdmin[] = [];
 
-// ---------------- Modal Copiar Arquivo ----------------
-abrirModalCopiar(arquivo: ArquivoAdmin): void {
-  this.arquivoParaCopiar = arquivo;
-  this.modalCopiarAberto = true;
-  this.pastaDestinoSelecionada = null;
-  this.loading = true;
+  // ---------------- Modal Copiar Arquivo ----------------
+  abrirModalCopiar(arquivo: ArquivoAdmin): void {
+    this.arquivoParaCopiar = arquivo;
+    this.modalCopiarAberto = true;
+    this.pastaDestinoSelecionada = null;
+    this.loading = true;
 
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo: ConteudoPasta) => {
-      // Carregamos apenas as pastas (sem arquivos)
-      this.pastasDisponiveisParaCopiar = conteudo.pastas;
-      this.loading = false;
-    },
-    error: (err) => {
-      this.handleError('Erro ao carregar pastas para copiar', err);
-      this.loading = false;
-    }
-  });
-}
-
-// Fechar modal de copiar arquivo
-fecharModalCopiar(): void {
-  this.modalCopiarAberto = false;
-  this.arquivoParaCopiar = null;
-  this.pastaDestinoSelecionada = null;
-  this.pastasDisponiveisParaCopiar = [];
-}
-
-// Confirmar cópia
-copiarArquivo(): void {
-  if (!this.arquivoParaCopiar || !this.pastaDestinoSelecionada) return;
-
-  this.loading = true;
-
-  this.adminService
-    .copiarArquivo(this.arquivoParaCopiar.id, this.pastaDestinoSelecionada.id)
-    .subscribe({
-      next: (arquivoCopiado) => {
-        this.recarregarConteudo();
-        this.fecharModalCopiar();
+    this.adminService.listarConteudoRaiz().subscribe({
+      next: (conteudo: ConteudoPasta) => {
+        // Carregamos apenas as pastas (sem arquivos)
+        this.pastasDisponiveisParaCopiar = conteudo.pastas;
         this.loading = false;
       },
-      error: (err) =>
-        this.handleError(
-          `Erro ao copiar arquivo ${this.arquivoParaCopiar?.nome}`,
-          err
-        ),
+      error: (err) => {
+        this.handleError('Erro ao carregar pastas para copiar', err);
+        this.loading = false;
+      },
     });
-}
+  }
 
-// ---------------- Copiar Pasta ----------------
-modalCopiarPastaAberto = false;
-pastaParaCopiar: PastaAdmin | null = null;
-pastaDestinoSelec: PastaAdmin | null = null;
+  // Fechar modal de copiar arquivo
+  fecharModalCopiar(): void {
+    this.modalCopiarAberto = false;
+    this.arquivoParaCopiar = null;
+    this.pastaDestinoSelecionada = null;
+    this.pastasDisponiveisParaCopiar = [];
+  }
 
-abrirModalCopiarPasta(pasta: PastaAdmin): void {
-  this.pastaParaCopiar = pasta;
-  this.pastaDestinoSelec = null;
-  this.modalCopiarPastaAberto = true;
-
-  // Carregar pastas disponíveis para seleção como destino
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo) => {
-      // Exclui a pasta que está sendo copiada da lista de destinos possíveis
-      this.pastasDisponiveisParaCopiar = conteudo.pastas.filter(p => p.id !== pasta.id);
-    },
-    error: (err) => this.handleError('Erro ao carregar pastas para destino', err)
-  });
-}
-
-fecharModalCopiarPasta(): void {
-  this.modalCopiarPastaAberto = false;
-  this.pastaParaCopiar = null;
-  this.pastaDestinoSelec = null;
-  this.pastasDisponiveisParaCopiar = [];
-}
-
-copiarPasta(): void {
-    if (!this.pastaParaCopiar) return;
-
-    const destinoId = this.pastaDestinoSelecionada ? this.pastaDestinoSelecionada.id.toString() : undefined;
+  // Confirmar cópia
+  copiarArquivo(): void {
+    if (!this.arquivoParaCopiar || !this.pastaDestinoSelecionada) return;
 
     this.loading = true;
-    this.adminService.copiarPasta(this.pastaParaCopiar.id.toString(), destinoId).subscribe({
-      next: (novaPasta) => {
-        // Atualiza conteúdo
-        this.recarregarConteudo();
 
-        // Fecha modal
-        this.fecharModalCopiarPasta();
+    this.adminService
+      .copiarArquivo(this.arquivoParaCopiar.id, this.pastaDestinoSelecionada.id)
+      .subscribe({
+        next: (arquivoCopiado) => {
+          this.recarregarConteudo();
+          this.fecharModalCopiar();
+          this.loading = false;
+        },
+        error: (err) =>
+          this.handleError(
+            `Erro ao copiar arquivo ${this.arquivoParaCopiar?.nome}`,
+            err
+          ),
+      });
+  }
 
-        // Remove loading
-        this.loading = false;
-        
+  // ---------------- Copiar Pasta ----------------
+  modalCopiarPastaAberto = false;
+  pastaParaCopiar: PastaAdmin | null = null;
+  pastaDestinoSelec: PastaAdmin | null = null;
+
+  abrirModalCopiarPasta(pasta: PastaAdmin): void {
+    this.pastaParaCopiar = pasta;
+    this.pastaDestinoSelec = null;
+    this.modalCopiarPastaAberto = true;
+
+    // Carregar pastas disponíveis para seleção como destino
+    this.adminService.listarConteudoRaiz().subscribe({
+      next: (conteudo) => {
+        // Exclui a pasta que está sendo copiada da lista de destinos possíveis
+        this.pastasDisponiveisParaCopiar = conteudo.pastas.filter(
+          (p) => p.id !== pasta.id
+        );
       },
-      error: (err) => this.handleError('Erro ao copiar pasta', err)
+      error: (err) =>
+        this.handleError('Erro ao carregar pastas para destino', err),
     });
+  }
+
+  fecharModalCopiarPasta(): void {
+    this.modalCopiarPastaAberto = false;
+    this.pastaParaCopiar = null;
+    this.pastaDestinoSelec = null;
+    this.pastasDisponiveisParaCopiar = [];
+  }
+
+  copiarPasta(): void {
+    if (!this.pastaParaCopiar) return;
+
+    const destinoId = this.pastaDestinoSelecionada
+      ? this.pastaDestinoSelecionada.id.toString()
+      : undefined;
+
+    this.loading = true;
+    this.adminService
+      .copiarPasta(this.pastaParaCopiar.id.toString(), destinoId)
+      .subscribe({
+        next: (novaPasta) => {
+          // Atualiza conteúdo
+          this.recarregarConteudo();
+
+          // Fecha modal
+          this.fecharModalCopiarPasta();
+
+          // Remove loading
+          this.loading = false;
+        },
+        error: (err) => this.handleError('Erro ao copiar pasta', err),
+      });
   }
 
   // -- Mover ou recortar pasta --
   // ---------------- Mover Pasta ----------------
-modalMoverPastaAberto = false;
-pastaParaMover: PastaAdmin | null = null;
-pastaDestinoMover: PastaAdmin | null = null;
-pastasDisponiveisParaMover: PastaAdmin[] = [];
+  modalMoverPastaAberto = false;
+  pastaParaMover: PastaAdmin | null = null;
+  pastaDestinoMover: PastaAdmin | null = null;
+  pastasDisponiveisParaMover: PastaAdmin[] = [];
 
-// Abrir modal de mover pasta
-abrirModalMoverPasta(pasta: PastaAdmin): void {
-  this.pastaParaMover = pasta;
-  this.pastaDestinoMover = null;
-  this.modalMoverPastaAberto = true;
+  // Abrir modal de mover pasta
+  abrirModalMoverPasta(pasta: PastaAdmin): void {
+    this.pastaParaMover = pasta;
+    this.pastaDestinoMover = null;
+    this.modalMoverPastaAberto = true;
 
-  this.loading = true;
-  // Carregar pastas disponíveis como destino (exceto a própria pasta e suas subpastas)
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo: ConteudoPasta) => {
-      // Filtra a pasta que está sendo movida
-      this.pastasDisponiveisParaMover = conteudo.pastas.filter(p => p.id !== pasta.id);
-      this.loading = false;
-    },
-    error: (err) => {
-      this.handleError('Erro ao carregar pastas para mover', err);
-      this.loading = false;
-    }
-  });
-}
-
-// Fechar modal de mover pasta
-fecharModalMoverPasta(): void {
-  this.modalMoverPastaAberto = false;
-  this.pastaParaMover = null;
-  this.pastaDestinoMover = null;
-  this.pastasDisponiveisParaMover = [];
-}
-
-// Confirmar mover pasta
-moverPasta(): void {
-  if (!this.pastaParaMover) return;
-
-  const destinoId = this.pastaDestinoMover ? this.pastaDestinoMover.id : undefined;
-  this.loading = true;
-
-  this.adminService.moverPasta(this.pastaParaMover.id, destinoId).subscribe({
-    next: (pastaMovida) => {
-      this.recarregarConteudo();
-      this.fecharModalMoverPasta();
-      this.loading = false;
-    },
-    error: (err) => this.handleError('Erro ao mover pasta', err),
-  });
-}
-
-// ---------------- Mover Arquivo ----------------
-modalMoverArquivoAberto = false;
-arquivoParaMover: ArquivoAdmin | null = null;
-pastaDestinoArquivo: PastaAdmin | null = null;
-
-abrirModalMoverArquivo(arquivo: ArquivoAdmin): void {
-  this.arquivoParaMover = arquivo;
-  this.pastaDestinoArquivo = null;
-  this.modalMoverArquivoAberto = true;
-  this.loading = true;
-
-  // Carrega as pastas disponíveis para destino
-  this.adminService.listarConteudoRaiz().subscribe({
-    next: (conteudo: ConteudoPasta) => {
-      this.pastasDisponiveisParaMover = conteudo.pastas;
-      this.loading = false;
-    },
-    error: (err) => {
-      this.handleError('Erro ao carregar pastas para mover', err);
-      this.loading = false;
-    }
-  });
-}
-
-fecharModalMoverArquivo(): void {
-  this.modalMoverArquivoAberto = false;
-  this.arquivoParaMover = null;
-  this.pastaDestinoArquivo = null;
-  this.pastasDisponiveisParaMover = [];
-}
-
-moverArquivo(): void {
-  if (!this.arquivoParaMover || !this.pastaDestinoArquivo) return;
-
-  this.loading = true;
-
-  this.adminService
-    .moverArquivo(this.arquivoParaMover.id, this.pastaDestinoArquivo.id)
-    .subscribe({
-      next: (arquivoMovido) => {
-        this.recarregarConteudo();
-        this.fecharModalMoverArquivo();
+    this.loading = true;
+    // Carregar pastas disponíveis como destino (exceto a própria pasta e suas subpastas)
+    this.adminService.listarConteudoRaiz().subscribe({
+      next: (conteudo: ConteudoPasta) => {
+        // Filtra a pasta que está sendo movida
+        this.pastasDisponiveisParaMover = conteudo.pastas.filter(
+          (p) => p.id !== pasta.id
+        );
         this.loading = false;
       },
-      error: (err) =>
-        this.handleError(
-          `Erro ao mover arquivo ${this.arquivoParaMover?.nome}`,
-          err
-        ),
+      error: (err) => {
+        this.handleError('Erro ao carregar pastas para mover', err);
+        this.loading = false;
+      },
     });
-}
+  }
 
-  
+  // Fechar modal de mover pasta
+  fecharModalMoverPasta(): void {
+    this.modalMoverPastaAberto = false;
+    this.pastaParaMover = null;
+    this.pastaDestinoMover = null;
+    this.pastasDisponiveisParaMover = [];
+  }
+
+  // Confirmar mover pasta
+  moverPasta(): void {
+    if (!this.pastaParaMover) return;
+
+    const destinoId = this.pastaDestinoMover
+      ? this.pastaDestinoMover.id
+      : undefined;
+    this.loading = true;
+
+    this.adminService.moverPasta(this.pastaParaMover.id, destinoId).subscribe({
+      next: (pastaMovida) => {
+        this.recarregarConteudo();
+        this.fecharModalMoverPasta();
+        this.loading = false;
+      },
+      error: (err) => this.handleError('Erro ao mover pasta', err),
+    });
+  }
+
+  // ---------------- Mover Arquivo ----------------
+  modalMoverArquivoAberto = false;
+  arquivoParaMover: ArquivoAdmin | null = null;
+  pastaDestinoArquivo: PastaAdmin | null = null;
+
+  abrirModalMoverArquivo(arquivo: ArquivoAdmin): void {
+    this.arquivoParaMover = arquivo;
+    this.pastaDestinoArquivo = null;
+    this.modalMoverArquivoAberto = true;
+    this.loading = true;
+
+    // Carrega as pastas disponíveis para destino
+    this.adminService.listarConteudoRaiz().subscribe({
+      next: (conteudo: ConteudoPasta) => {
+        this.pastasDisponiveisParaMover = conteudo.pastas;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.handleError('Erro ao carregar pastas para mover', err);
+        this.loading = false;
+      },
+    });
+  }
+
+  fecharModalMoverArquivo(): void {
+    this.modalMoverArquivoAberto = false;
+    this.arquivoParaMover = null;
+    this.pastaDestinoArquivo = null;
+    this.pastasDisponiveisParaMover = [];
+  }
+
+  moverArquivo(): void {
+    if (!this.arquivoParaMover || !this.pastaDestinoArquivo) return;
+
+    this.loading = true;
+
+    this.adminService
+      .moverArquivo(this.arquivoParaMover.id, this.pastaDestinoArquivo.id)
+      .subscribe({
+        next: (arquivoMovido) => {
+          this.recarregarConteudo();
+          this.fecharModalMoverArquivo();
+          this.loading = false;
+        },
+        error: (err) =>
+          this.handleError(
+            `Erro ao mover arquivo ${this.arquivoParaMover?.nome}`,
+            err
+          ),
+      });
+  }
 
   // ---------------- Usuários ----------------
   usuariosExcluidosIds: number[] = [];
@@ -629,19 +653,19 @@ moverArquivo(): void {
   }
 
   // ✅ Refatore o método para aceitar "Usuario" ou "null"
-onUsuarioSelecionado(usuario: Usuario | null) {
-  // Adiciona a verificação de nulo
-  if (usuario) {
-    if (this.modalAtivo === 'criarPasta') {
-      this.usuariosSelecionados.push(usuario);
-    } else if (this.modalAtivo === 'permissao') {
-      this.usuariosComPermissao.push(usuario);
+  onUsuarioSelecionado(usuario: Usuario | null) {
+    // Adiciona a verificação de nulo
+    if (usuario) {
+      if (this.modalAtivo === 'criarPasta') {
+        this.usuariosSelecionados.push(usuario);
+      } else if (this.modalAtivo === 'permissao') {
+        this.usuariosComPermissao.push(usuario);
+      }
     }
-  }
 
-  this.modalSelecionarUsuarioAberto = false;
-  this.modalAtivo = null;
-}
+    this.modalSelecionarUsuarioAberto = false;
+    this.modalAtivo = null;
+  }
 
   abrirModalPermissao(pasta: PastaAdmin): void {
     this.pastaParaPermissao = pasta;
@@ -663,9 +687,11 @@ onUsuarioSelecionado(usuario: Usuario | null) {
     });
   }
 
-   // ✅ Método para remover um usuário da lista de selecionados
-   removerUsuarioSelecionado(usuario: Usuario) {
-    this.usuariosSelecionados = this.usuariosSelecionados.filter(u => u.id !== usuario.id);
+  // ✅ Método para remover um usuário da lista de selecionados
+  removerUsuarioSelecionado(usuario: Usuario) {
+    this.usuariosSelecionados = this.usuariosSelecionados.filter(
+      (u) => u.id !== usuario.id
+    );
   }
 
   adicionarUsuarioPermissao(usuario: Usuario): void {
@@ -743,8 +769,22 @@ onUsuarioSelecionado(usuario: Usuario | null) {
     return item ? (this.isPasta(item) ? item.nomePasta : item.nome) : '';
   }
 
-  private handleError(msg: string, err?: any): void {
-    console.error(msg, err);
+  private handleError(mensagemPadrao: string, err?: any): void {
+    console.error(mensagemPadrao, err);
+
+    let errorMessage: string;
+
+    if (err && typeof err === 'object') {
+      const backendError = err as ErrorMessage;
+
+      errorMessage = `Erro (${backendError.status} - ${
+        backendError.error || 'Erro desconhecido'
+      }): ${backendError.message || mensagemPadrao}`;
+    } else {
+      errorMessage = mensagemPadrao;
+    }
+
+    this.toastService.showError(errorMessage);
     this.loading = false;
   }
 }

@@ -12,6 +12,13 @@ import { Usuario } from '../models/usuario'; // Importa o novo modelo de Usuario
 import { Role } from '../models/role';
 import { environment } from '../../environment/environment.prod';
 
+export interface ErrorMessage {
+  status: number;
+  error: string;
+  message: string;
+  path: string;
+}
+
 @Injectable({
   providedIn: 'root', // Torna o serviço disponível em toda a aplicação
 })
@@ -19,8 +26,8 @@ export class UsuarioService {
   http = inject(HttpClient);
 
   // ⚠️ Ajuste o endpoint da sua API de usuários no backend
-    // URL base da API (poderia ser movida para environment.ts)
-    private readonly API_URL = environment.apiUrl+'/api/usuario';
+  // URL base da API (poderia ser movida para environment.ts)
+  private readonly API_URL = environment.apiUrl + '/api/usuario';
 
   constructor() {}
 
@@ -48,7 +55,7 @@ export class UsuarioService {
     if (username) params = params.set('username', username);
 
     // O backend NÃO deve retornar a senha em operações GET por segurança.
-     return this.http.get<Paginacao<Usuario>>(this.API_URL, { params });
+    return this.http.get<Paginacao<Usuario>>(this.API_URL, { params });
   }
 
   /**
@@ -66,11 +73,9 @@ export class UsuarioService {
    * Cadastra um novo usuário.
    * @param usuario Objeto com dados do novo usuário (inclui senha)
    */
-  cadastrar(usuario: Partial<Usuario>): Observable<string> {
+  cadastrar(usuario: Partial<Usuario>): Observable<any> {
     return this.http
-      .post<string>(this.API_URL, usuario, {
-        responseType: 'text' as 'json',
-      })
+      .post<any>(this.API_URL, usuario) // ✅ deixa JSON normal
       .pipe(catchError(this.tratarErro));
   }
 
@@ -81,23 +86,21 @@ export class UsuarioService {
    * @param usuario Objeto com dados do usuário a serem atualizados (senha opcional)
    * @returns Um Observable que emite o objeto Usuario atualizado pelo backend.
    */
-  atualizar(id: number, usuario: Partial<Usuario>): Observable<Usuario> { // ✅ Recebe Partial<Usuario> e retorna Observable<Usuario>
-     return this.http.patch<Usuario>(`${this.API_URL}/${id}`, usuario, {
-      responseType: 'text' as 'json', // backend retorna texto, não JSON
-    });// ✅ Espera JSON de retorno, remove responseType
-      
+  atualizar(id: number, usuario: Partial<Usuario>): Observable<Usuario> {
+    return this.http
+      .patch<Usuario>(`${this.API_URL}/${id}`, usuario) // ✅ deixa JSON normal
+      .pipe(catchError(this.tratarErro)); // ✅ padroniza erro
   }
-
+  
 
   /**
    * Exclui um usuário pelo ID.
    * @param id ID do usuário
    */
-  excluir(id: number): Observable<string> {
-    // Backend deve retornar uma mensagem de sucesso (String)
-    return this.http.delete<string>(`${this.API_URL}/${id}`, {
-      responseType: 'text' as 'json',
-    });
+  excluir(id: number): Observable<any> {
+    return this.http
+      .delete<any>(`${this.API_URL}/${id}`) // ✅ deixa JSON normal
+      .pipe(catchError(this.tratarErro));   // ✅ garante padronização de erro
   }
 
   /**
@@ -105,10 +108,23 @@ export class UsuarioService {
    * Loga no console e retorna um erro amigável.
    */
   private tratarErro(error: HttpErrorResponse) {
-    console.error('Ocorreu um erro:', error);
+    console.error('Ocorreu um erro vindo do backend:', error);
 
-    return throwError(
-      () => new Error(error.error?.mensagem || 'Erro ao processar requisição')
-    );
+    const backendError = error.error;
+
+    const errMsg: ErrorMessage = {
+      status: backendError?.status || error.status,
+      error:
+        backendError?.erro || backendError?.error || error.statusText || 'Erro',
+      message:
+        backendError?.mensagem ||
+        backendError?.message ||
+        'Erro ao processar requisição',
+      path: backendError?.path || error.url || '',
+    };
+
+    console.warn('📌 Objeto de erro padronizado:', errMsg);
+
+    return throwError(() => errMsg);
   }
 }

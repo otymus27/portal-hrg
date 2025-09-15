@@ -13,7 +13,7 @@ import { Paginacao } from '../../models/paginacao'; // Modelo de Paginação
 import { RoleService } from '../../services/role.service';
 // ✅ Novos imports para o gerenciamento de usuários
 import { Usuario } from '../../models/usuario';
-import { UsuarioService } from '../../services/usuario.service';
+import { ErrorMessage, UsuarioService } from '../../services/usuario.service';
 import { Role } from '../../models/role';
 import { RecuperarSenhaService } from '../../services/recuperar-senha.service';
 import { ModalConfirmacaoComponent } from '../modal/confirmacao/confirmacao.component';
@@ -244,7 +244,7 @@ export class UsuarioComponent {
         return;
       }
       this.usuarioService.cadastrar(usuarioDTO).subscribe({
-        next: () => {
+        next: (msg) => {
           // ✅ Debug para retorno do backend
           console.log('Retorno do backend:', usuarioDTO);
           // ✅ Log de debug para o objeto enviado no cadastro
@@ -255,14 +255,13 @@ export class UsuarioComponent {
             isNovoRegistro
           );
 
-          this.toastService.showSuccess('Usuário cadastrado com sucesso!');
+          this.toastService.showSuccess(msg || 'Usuário cadastrado com sucesso!');
           this.listar();
           this.modalRef.close();
         },
-        error: (err) => {
-          // ✅ Use o serviço de toast
+        error: (err: ErrorMessage) => {
           this.toastService.showError(
-            `Erro: ${err.error?.mensagem || 'Erro desconhecido.'}`
+            `Erro (${err.status} - ${err.error}): ${err.message}`
           );
         },
       });
@@ -297,11 +296,9 @@ export class UsuarioComponent {
           this.listar();
           this.modalRef.close();
         },
-        error: (err) => {
+        error: (err: ErrorMessage) => {
           this.toastService.showError(
-            `Erro: ${
-              err.error?.mensagem || 'Erro desconhecido ao atualizar usuário.'
-            }`
+            `Erro (${err.status} - ${err.error}): ${err.message}`
           );
         },
       });
@@ -321,8 +318,10 @@ export class UsuarioComponent {
         this.toastService.showSuccess('Usuário excluído com sucesso!');
         this.listar();
       },
-      error: () => {
-        this.toastService.showError('Erro ao excluir usuário!');
+      error: (err: ErrorMessage) => {
+        this.toastService.showError(
+          `Erro (${err.status} - ${err.error}): ${err.message}`
+        );
       },
     });
   }
