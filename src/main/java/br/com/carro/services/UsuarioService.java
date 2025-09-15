@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 
 import java.util.Optional;
@@ -73,45 +74,73 @@ public class UsuarioService {
         }
     }
 
-    // Buscar carro por ID
-    public Usuario buscarPorId(Long id) throws Exception {
-        Usuario usuario = this.usuarioRepository.findById(id).get();
-        return usuario;
-    }
-
-    public Usuario atualizar(Long id, Usuario usuarioComNovosDados) {
-        Usuario usuarioExistente = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
-
-        usuarioExistente.setUsername(usuarioComNovosDados.getUsername());
-        // ... (Atualizar outras propriedades como roles, se estiverem presentes em usuarioComNovosDados)
-
-        // ✅ Lógica para ATUALIZAR as roles
-        if (usuarioComNovosDados.getRoles() != null) {
-            // Extrai os IDs das roles recebidas do frontend (o frontend envia objetos Role com ID)
-            Set<Long> roleIds = usuarioComNovosDados.getRoles().stream()
-                    .map(Role::getId) // Mapeia cada Role para seu ID
-                    .collect(Collectors.toSet());
-
-            // Busca as entidades Role completas (gerenciadas) do banco de dados pelos IDs
-            Set<Role> rolesDoBanco = new HashSet<>(roleRepository.findAllById(roleIds));
-
-            // Seta as roles no usuário existente (substituindo as antigas)
-            usuarioExistente.setRoles(rolesDoBanco);
-        } else {
-            // Se nenhum role for fornecido, você pode optar por:
-            // 1. Manter as roles existentes (não fazer nada)
-            // 2. Limpar as roles: usuarioExistente.setRoles(new HashSet<>());
-            // Para este caso, vamos manter as roles existentes se nenhum for fornecido no DTO
+    // Buscar usuario por ID
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = {ResourceNotFoundException.class})
+    public Usuario buscarPorId(Long id, Usuario usuarioLogado) throws AccessDeniedException {
+        // Apenas admins podem consultar diretamente outro usuário
+        if (!usuarioLogado.getRoles().stream().anyMatch(r -> r.getNome().equals("ADMIN"))) {
+            throw new AccessDeniedException("Usuário não possui permissão para consultar outro usuário.");
         }
 
-        // ✅ Lógica vital no Service: SÓ ATUALIZA A SENHA SE ELA FOR FORNECIDA
-        if (usuarioComNovosDados.getPassword() != null) { // Agora o Controller já fez o encode se for para atualizar
-            usuarioExistente.setPassword(usuarioComNovosDados.getPassword());
+        // Evita que o usuário busque a si mesmo de forma redundante (opcional, mas consistente com excluir)
+        if (id.equals(usuarioLogado.getId())) {
+            throw new IllegalArgumentException("Para consultar seus próprios dados, utilize o endpoint de usuário logado.");
+        }
+
+        // Busca o usuário no banco
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com id " + id));
+    }
+
+
+    @Transactional(
+            rollbackFor = Exception.class,
+            noRollbackFor = {ResourceNotFoundException.class, IllegalArgumentException.class}
+    )
+    public Usuario atualizar(Long id, Usuario usuarioComNovosDados, Usuario usuarioLogado) throws AccessDeniedException {
+        // ✅ Apenas admins podem atualizar usuários
+        if (!usuarioLogado.getRoles().stream().anyMatch(r -> r.getNome().equals("ADMIN"))) {
+            throw new AccessDeniedException("Usuário não possui permissão para atualizar outros usuários.");
+        }
+
+        // ✅ Não permitir que o usuário remova suas próprias permissões críticas
+        if (id.equals(usuarioLogado.getId()) && usuarioComNovosDados.getRoles() != null) {
+            boolean removeuAdmin = usuarioComNovosDados.getRoles().stream()
+                    .noneMatch(role -> "ADMIN".equals(role.getNome()));
+            if (removeuAdmin) {
+                throw new IllegalArgumentException("Usuário não pode remover seu próprio papel de ADMIN.");
+            }
+        }
+
+        // ✅ Buscar usuário no banco
+        Usuario usuarioExistente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com id " + id));
+
+        // Atualizar username
+        usuarioExistente.setUsername(usuarioComNovosDados.getUsername());
+
+        // ✅ Atualizar roles
+        if (usuarioComNovosDados.getRoles() != null) {
+            Set<Long> roleIds = usuarioComNovosDados.getRoles().stream()
+                    .map(Role::getId)
+                    .collect(Collectors.toSet());
+
+            Set<Role> rolesDoBanco = new HashSet<>(roleRepository.findAllById(roleIds));
+            if (rolesDoBanco.isEmpty()) {
+                throw new IllegalArgumentException("Nenhuma role válida encontrada para atualizar o usuário.");
+            }
+            usuarioExistente.setRoles(rolesDoBanco);
+        }
+
+        // ✅ Atualizar senha apenas se for fornecida
+        if (usuarioComNovosDados.getPassword() != null && !usuarioComNovosDados.getPassword().isBlank()) {
+            usuarioExistente.setPassword(usuarioComNovosDados.getPassword()); // já deve estar encodada
         }
 
         return usuarioRepository.save(usuarioExistente);
     }
+
+
 
     @Transactional(rollbackFor = Exception.class, noRollbackFor = {ResourceNotFoundException.class})
     public void excluir(Long id, Usuario usuarioLogado) throws AccessDeniedException {
@@ -135,31 +164,34 @@ public class UsuarioService {
     }
 
 
-    public UsuarioLogadoDTO buscarUsuarioLogado() {
+    @Transactional(readOnly = true, rollbackFor = Exception.class, noRollbackFor = {ResourceNotFoundException.class})
+    public UsuarioLogadoDTO buscarUsuarioLogado() throws AccessDeniedException {
+        // 1️⃣ Recupera o usuário logado do contexto de segurança
         String login = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        Optional<Usuario> optionalUsuario = usuarioRepository.findByUsername(login);
-        if (optionalUsuario.isPresent()) {
-            Usuario usuario = optionalUsuario.get();
+        // 2️⃣ Busca usuário no banco
+        Usuario usuario = usuarioRepository.findByUsername(login)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário autenticado não encontrado."));
 
-            Set<Long> pastasIds = usuario.getPastasPrincipaisAcessadas().stream()
-                    .map(Pasta::getId)
-                    .collect(Collectors.toSet());
+        // 3️⃣ Mapeia pastas acessadas
+        Set<Long> pastasIds = usuario.getPastasPrincipaisAcessadas().stream()
+                .map(Pasta::getId)
+                .collect(Collectors.toSet());
 
-            Set<UsuarioLogadoDTO.RoleDto> rolesDto = usuario.getRoles().stream()
-                    .map(role -> new UsuarioLogadoDTO.RoleDto(role.getId(), role.getNome()))
-                    .collect(Collectors.toSet());
+        // 4️⃣ Mapeia roles para DTO
+        Set<UsuarioLogadoDTO.RoleDto> rolesDto = usuario.getRoles().stream()
+                .map(role -> new UsuarioLogadoDTO.RoleDto(role.getId(), role.getNome()))
+                .collect(Collectors.toSet());
 
-            return new UsuarioLogadoDTO(
-                    usuario.getId(),
-                    usuario.getUsername(),
-                    pastasIds,
-                    rolesDto
-            );
-        }
-
-        return null;
+        // 5️⃣ Retorna DTO consolidado
+        return new UsuarioLogadoDTO(
+                usuario.getId(),
+                usuario.getUsername(),
+                pastasIds,
+                rolesDto
+        );
     }
+
 
     // Listar todas as marcas com paginação
     public Page<Usuario> listar(Pageable pageable) {

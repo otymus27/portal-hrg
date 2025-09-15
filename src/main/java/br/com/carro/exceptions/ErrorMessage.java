@@ -5,15 +5,15 @@ import java.time.LocalDateTime;
 public class ErrorMessage {
     private LocalDateTime timestamp;
     private int status;
-    private String erro;
-    private String mensagem;
+    private String error;
+    private String message;
     private String path;
 
     public ErrorMessage(int status, String erro, String mensagem, String path) {
         this.timestamp = LocalDateTime.now();
         this.status = status;
-        this.erro = erro;
-        this.mensagem = mensagem;
+        this.error = erro;
+        this.message = mensagem;
         this.path = path;
     }
 
@@ -25,12 +25,12 @@ public class ErrorMessage {
         return status;
     }
 
-    public String getErro() {
-        return erro;
+    public String getError() {
+        return error;
     }
 
-    public String getMensagem() {
-        return mensagem;
+    public String getMessage() {
+        return message;
     }
 
     public String getPath() {
@@ -41,12 +41,12 @@ public class ErrorMessage {
         this.status = status;
     }
 
-    public void setErro(String erro) {
-        this.erro = erro;
+    public void setError(String error) {
+        this.error = error;
     }
 
-    public void setMensagem(String mensagem) {
-        this.mensagem = mensagem;
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public void setPath(String path) {

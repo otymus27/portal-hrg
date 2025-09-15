@@ -186,4 +186,17 @@ public class ApiExceptionHandler implements AuthenticationEntryPoint {
                         request.getRequestURI()
                 ));
     }
+
+    @ResponseBody
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorMessage handleIllegalArgumentException(IllegalArgumentException ex, HttpServletRequest request) {
+        return new ErrorMessage(
+                HttpStatus.BAD_REQUEST.value(),
+                "Dados inválidos",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
 }

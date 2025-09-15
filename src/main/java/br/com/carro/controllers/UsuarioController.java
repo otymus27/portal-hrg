@@ -144,44 +144,110 @@ public class UsuarioController {
     }
 
 
-    // Buscar carro por ID
+    // Buscar usuário por ID
     @GetMapping("/{id}")
-    // ✅ Apenas usuários com a role 'ADMIN' podem acessar este método para gerenciar usuários.
-    @PreAuthorize("hasRole('ADMIN')") // CORRIGIDO: Era 'ROLE_ADMIN', agora é 'ADMIN'
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')") // ✅ Apenas ADMIN pode buscar outro usuário
+    public ResponseEntity<?> buscarUsuarioPorId(@PathVariable Long id,
+                                                Authentication authentication,
+                                                HttpServletRequest request) {
         try {
-            // Chama o service que retorna o objeto ou lança exceção se não existir
-            Usuario usuario = usuarioService.buscarPorId(id);
-            return new ResponseEntity<>(usuario, HttpStatus.OK);
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            Usuario usuario = usuarioService.buscarPorId(id, usuarioLogado);
+            return ResponseEntity.ok(usuario);
+
+        } catch (ResourceNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Usuário não encontrado",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Dados inválidos",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
+        } catch (AccessDeniedException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.FORBIDDEN.value(),
+                    "Acesso negado",
+                    "Você não tem permissão para visualizar este usuário.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Erro interno no servidor",
+                    "Erro inesperado ao buscar usuário por ID.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Atualizar um carro
+
+    // ✅ Atualizar um registro
     @PatchMapping("/{id}")
-    // ✅ Apenas usuários com a role 'ADMIN' podem acessar este método para gerenciar usuários.
-    @PreAuthorize("hasRole('ADMIN')") // CORRIGIDO: Era 'ROLE_ADMIN', agora é 'ADMIN'
-    public ResponseEntity<Usuario> atualizar(@PathVariable Long id, @RequestBody Usuario usuario) { // ✅ Retorna Usuario
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')") // Apenas ADMIN pode atualizar usuários
+    public ResponseEntity<?> atualizarUsuario(@PathVariable Long id,
+                                              @RequestBody Usuario usuarioComNovosDados,
+                                              Authentication authentication,
+                                              HttpServletRequest request) {
         try {
-            // ✅ CORREÇÃO: Apenas codifica e define a senha se ela foi fornecida na requisição
-            if (usuario.getPassword() != null && !usuario.getPassword().isBlank()) {
-                usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
-            } else {
-                // Se a senha não foi fornecida, garantimos que ela não será atualizada.
-                // Passamos null para o service indicar que a senha não deve ser alterada.
-                // IMPORTANTE: O serviço DEVE lidar com essa lógica de não alterar senha se for null.
-                usuario.setPassword(null);
-            }
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
 
-            // Atualiza o usuário usando o service
-            Usuario usuarioAtualizado = this.usuarioService.atualizar(id, usuario); // ✅ Retorna o Usuario atualizado
-            return new ResponseEntity<>(usuarioAtualizado, HttpStatus.OK);
+            // ⚠️ Aqui já deve vir com a senha encodada do Controller (se aplicável)
+            Usuario usuarioAtualizado = usuarioService.atualizar(id, usuarioComNovosDados, usuarioLogado);
+            return ResponseEntity.ok(usuarioAtualizado);
+
+        } catch (ResourceNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Usuário não encontrado",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Dados inválidos",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
+        } catch (AccessDeniedException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.FORBIDDEN.value(),
+                    "Acesso negado",
+                    "Você não tem permissão para atualizar este usuário.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
         } catch (Exception e) {
-            logger.error("Erro ao atualizar usuário com ID {}: {}", id, e.getMessage(), e);
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST); // Retornar null ou DTO de erro
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Erro interno no servidor",
+                    "Erro inesperado ao atualizar o usuário.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+
 
     // Excluir um registro
     @DeleteMapping("/{id}")
@@ -234,24 +300,54 @@ public class UsuarioController {
         }
     }
 
-    // Método para buscar o usuário logado
+    // ✅ ENDPOINT - Buscar usuário logado
     @GetMapping("/logado")
     @Transactional
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getUsuarioLogado(HttpServletRequest request) {
-        UsuarioLogadoDTO usuario = usuarioService.buscarUsuarioLogado();
-        if (usuario != null) {
-            return ResponseEntity.ok(usuario);
-        } else {
+    @PreAuthorize("isAuthenticated()") // Qualquer usuário autenticado pode acessar
+    public ResponseEntity<?> getUsuarioLogado(Authentication authentication,
+                                              HttpServletRequest request) {
+        try {
+            UsuarioLogadoDTO usuarioLogado = usuarioService.buscarUsuarioLogado();
+            return ResponseEntity.ok(usuarioLogado);
+
+        } catch (ResourceNotFoundException e) {
             ErrorMessage error = new ErrorMessage(
                     HttpStatus.NOT_FOUND.value(),
-                    "Recurso não encontrado",
-                    "Usuário autenticado não encontrado",
+                    "Usuário não encontrado",
+                    e.getMessage(),
                     request.getRequestURI()
             );
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Dados inválidos",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
+        } catch (AccessDeniedException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.FORBIDDEN.value(),
+                    "Acesso negado",
+                    "Você não tem permissão para acessar este recurso.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
+        } catch (Exception e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Erro interno no servidor",
+                    "Erro inesperado ao buscar usuário logado.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+
 
 
 
