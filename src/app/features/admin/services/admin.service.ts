@@ -43,7 +43,9 @@ export interface PastaAdmin {
   nomePasta: string;
   caminhoCompleto: string;
   dataCriacao: Date;
-  criadoPor: any;
+  dataAtualizacao: Date; // ✅ novo
+  tamanho?: number; // ✅ opcional, caso o back retorne
+  criadoPor: string;
   subPastas?: PastaAdmin[];
   arquivos?: ArquivoAdmin[];
   usuariosComPermissao?: Usuario[];
@@ -54,7 +56,8 @@ export interface ArquivoAdmin {
   nome: string;
   tipo: string;
   tamanho: number;
-  dataModificacao: string;
+  dataAtualizacao: Date;
+  criadoPor: string;
   url: string;
 }
 
@@ -128,6 +131,14 @@ export class AdminService {
         })),
         catchError(this.tratarErro)
       );
+  }
+
+  abrirArquivo(arquivoId: number): Observable<Blob> {
+    return this.http
+      .get(`${this.apiUrlAdminArquivos}/visualizar/${arquivoId}`, {
+        responseType: 'blob',
+      })
+      .pipe(catchError(this.tratarErro));
   }
 
   downloadArquivo(arquivoId: number): Observable<Blob> {
@@ -251,11 +262,9 @@ export class AdminService {
       .pipe(catchError(this.tratarErro));
   }
 
-  atualizarPermissoesAcao(dto: PastaPermissaoAcaoDTO): Observable<string> {
+  atualizarPermissoesAcao(dto: PastaPermissaoAcaoDTO): Observable<any> {
     return this.http
-      .post(`${this.apiUrlAdminPastas}/permissao/acao`, dto, {
-        responseType: 'text',
-      })
+      .post<any>(`${this.apiUrlAdminPastas}/permissao/acao`, dto)
       .pipe(catchError(this.tratarErro));
   }
 

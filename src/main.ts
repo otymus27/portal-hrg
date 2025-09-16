@@ -10,6 +10,8 @@ import {
 import { HTTP_INTERCEPTORS } from '@angular/common/http'; // ✅ Importe HTTP_INTERCEPTORS
 import { AuthTokenInterceptor } from './app/services/auth-token.interceptor'; // ✅ Importe seu interceptor
 import { AuthService } from './app/services/auth.service'; // ✅ Importe seu AuthService se ele não tiver `providedIn: 'root'`
+import { importProvidersFrom } from '@angular/core';
+import { NgApexchartsModule } from 'ng-apexcharts';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -17,6 +19,8 @@ bootstrapApplication(AppComponent, {
 
     // ✅ Configuração do HttpClient para usar interceptors do DI
     provideHttpClient(withInterceptorsFromDi()),
+
+    importProvidersFrom(NgApexchartsModule),
 
     // ✅ Registro do seu AuthTokenInterceptor
     {

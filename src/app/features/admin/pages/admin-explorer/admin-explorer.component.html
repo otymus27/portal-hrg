@@ -86,6 +86,9 @@
               />
             </th>
             <th>Nome</th>
+            <th>Tamanho</th>
+            <th>Data de Atualização</th>
+            <th>Criado Por</th>
             <th class="text-end">Ações</th>
           </tr>
         </thead>
@@ -106,6 +109,23 @@
             >
               📁 {{ pasta.nomePasta }}
             </td>
+
+            <td
+              class="text-primary fw-bold"
+              style="cursor: pointer"
+              (click)="abrirPasta(pasta)"
+            >
+              Folder
+            </td>
+
+            <td
+              class="text-primary fw-bold"
+              style="cursor: pointer"
+              (click)="abrirPasta(pasta)"
+            >
+              {{ pasta.dataAtualizacao | date : "dd/MM/yyyy HH:mm" }}
+            </td>
+            <td>{{ pasta.criadoPor }}</td>
             <td class="text-end">
               <button
                 class="btn btn-info btn-sm me-1"
@@ -149,7 +169,12 @@
                 (change)="toggleSelecao(arquivo)"
               />
             </td>
-            <td>📄 {{ arquivo.nome }}</td>
+            <td (click)="abrirOpcoesArquivo(arquivo)" style="cursor:pointer">
+              📄 {{ arquivo.nome }}
+            </td>
+            <td>{{ arquivo.tamanho | number }} KB</td>
+            <td>{{ arquivo.dataAtualizacao | date : "dd/MM/yyyy HH:mm" }}</td>
+            <td>{{ arquivo.criadoPor }}</td>
             <td class="text-end">
               <button
                 class="btn btn-success btn-sm me-1"
@@ -449,6 +474,26 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Opções de Arquivo -->
+<div class="modal-backdrop" *ngIf="modalOpcoesArquivoAberto">
+  <div class="modal-custom">
+    <h3>Arquivo: {{ arquivoSelecionado?.nome }}</h3>
+    <p>O que deseja fazer?</p>
+    <div class="text-end">
+      <button class="btn btn-primary me-2" (click)="abrirArquivo(arquivoSelecionado)">
+        Abrir
+      </button>
+      <button class="btn btn-success me-2" (click)="downloadArquivo(arquivoSelecionado)">
+        Baixar
+      </button>
+      <button class="btn btn-secondary" (click)="fecharModalOpcoesArquivo()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
 
 <!-- Modal Selecionar Usuário -->
 <app-modal-usuario

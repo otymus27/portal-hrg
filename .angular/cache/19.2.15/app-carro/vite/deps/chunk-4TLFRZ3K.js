@@ -1,10 +1,10 @@
 import {
-  isPlatformBrowser
-} from "./chunk-BPZ7AUX4.js";
-import {
   coerceElement,
   coerceNumberProperty
-} from "./chunk-UZRDOEGV.js";
+} from "./chunk-JJBNIDOL.js";
+import {
+  isPlatformBrowser
+} from "./chunk-DEWRB63J.js";
 import {
   ApplicationRef,
   Directive,
@@ -27,14 +27,14 @@ import {
   ɵɵdefineInjectable,
   ɵɵdefineInjector,
   ɵɵdefineNgModule
-} from "./chunk-6SZJNWHU.js";
+} from "./chunk-RFZ2BTTM.js";
 import {
   Observable,
   Subject,
   debounceTime,
   filter,
   map
-} from "./chunk-CXCX2JKZ.js";
+} from "./chunk-4S3KYZTJ.js";
 
 // node_modules/@angular/cdk/fesm2022/observers.mjs
 function shouldIgnoreRecord(record) {
@@ -281,6 +281,19 @@ var ObserversModule = class _ObserversModule {
   }], null, null);
 })();
 
+// node_modules/@angular/cdk/fesm2022/backwards-compatibility-DHR38MsD.mjs
+function _bindEventWithOptions(renderer, target, eventName, callback, options) {
+  const major = parseInt(VERSION.major);
+  const minor = parseInt(VERSION.minor);
+  if (major > 19 || major === 19 && minor > 0 || major === 0 && minor === 0) {
+    return renderer.listen(target, eventName, callback, options);
+  }
+  target.addEventListener(eventName, callback, options);
+  return () => {
+    target.removeEventListener(eventName, callback, options);
+  };
+}
+
 // node_modules/@angular/cdk/fesm2022/platform-DmdVEw_C.mjs
 var hasV8BreakIterator;
 try {
@@ -391,24 +404,11 @@ var _CdkPrivateStyleLoader = class __CdkPrivateStyleLoader {
   }], null, null);
 })();
 
-// node_modules/@angular/cdk/fesm2022/backwards-compatibility-DHR38MsD.mjs
-function _bindEventWithOptions(renderer, target, eventName, callback, options) {
-  const major = parseInt(VERSION.major);
-  const minor = parseInt(VERSION.minor);
-  if (major > 19 || major === 19 && minor > 0 || major === 0 && minor === 0) {
-    return renderer.listen(target, eventName, callback, options);
-  }
-  target.addEventListener(eventName, callback, options);
-  return () => {
-    target.removeEventListener(eventName, callback, options);
-  };
-}
-
 export {
-  ContentObserver,
-  ObserversModule,
+  _bindEventWithOptions,
   Platform,
   _CdkPrivateStyleLoader,
-  _bindEventWithOptions
+  ContentObserver,
+  ObserversModule
 };
-//# sourceMappingURL=chunk-TVEEZZ22.js.map
+//# sourceMappingURL=chunk-4TLFRZ3K.js.map

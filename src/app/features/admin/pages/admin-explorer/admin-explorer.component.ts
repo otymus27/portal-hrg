@@ -147,12 +147,16 @@ export class AdminExplorerComponent implements OnInit {
   }
 
   criarPasta(): void {
-    if (!this.novoNomePasta || this.usuariosSelecionados.length === 0) return;
+    if (!this.novoNomePasta) return;
 
     const body = {
       nome: this.novoNomePasta,
       pastaPaiId: this.obterPastaAtual()?.id,
-      usuariosComPermissaoIds: this.usuariosSelecionados.map((u) => u.id),
+      // se não houver seleção, envia array vazio → backend resolve
+      usuariosComPermissaoIds:
+        this.usuariosSelecionados.length > 0
+          ? this.usuariosSelecionados.map((u) => u.id)
+          : [],
     };
 
     this.adminService.criarPasta(body).subscribe({
@@ -180,25 +184,25 @@ export class AdminExplorerComponent implements OnInit {
 
   renomearItem(): void {
     if (!this.itemParaRenomear || !this.novoNomeItem) return;
-  
+
     const novoNome = this.novoNomeItem.trim();
-  
+
     // Nome atual normalizado
     const nomeAtual = this.isPasta(this.itemParaRenomear)
       ? (this.itemParaRenomear.nomePasta || '').trim()
       : (this.itemParaRenomear.nome || '').trim();
-  
+
     // Se não mudou (ignorando case), não chama o back-end
     if (nomeAtual.toLowerCase() === novoNome.toLowerCase()) {
       this.toastService.showInfo('O nome não foi alterado.');
       this.fecharModalRenomear();
       return;
     }
-  
+
     const request: Observable<any> = this.isPasta(this.itemParaRenomear)
       ? this.adminService.renomearPasta(this.itemParaRenomear.id, novoNome)
       : this.adminService.renomearArquivo(this.itemParaRenomear.id, novoNome); // se tiver similar para arquivo
-  
+
     request.subscribe({
       next: () => {
         this.toastService.showSuccess('Nome alterado com sucesso!');
@@ -206,7 +210,7 @@ export class AdminExplorerComponent implements OnInit {
       },
       error: (err) => this.handleError('Erro ao renomear item', err),
     });
-  
+
     this.fecharModalRenomear();
   }
 
@@ -259,7 +263,8 @@ export class AdminExplorerComponent implements OnInit {
       });
   }
 
-  downloadArquivo(arquivo: ArquivoAdmin): void {
+  downloadArquivo(arquivo: ArquivoAdmin | null) {
+    if (!arquivo) return;
     this.adminService.downloadArquivo(arquivo.id).subscribe((blob) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -616,6 +621,28 @@ export class AdminExplorerComponent implements OnInit {
       });
   }
 
+  // -------------Abrir arquivo clicando em cima dele --------------//
+  abrirArquivo(arquivo: ArquivoAdmin | null) {
+    if (!arquivo) return;
+    this.adminService.abrirArquivo(arquivo.id).subscribe((blob) => {
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank'); // abre em nova aba
+    });
+  }
+
+  arquivoSelecionado: ArquivoAdmin | null = null;
+  modalOpcoesArquivoAberto = false;
+
+  abrirOpcoesArquivo(arquivo: ArquivoAdmin) {
+    this.arquivoSelecionado = arquivo;
+    this.modalOpcoesArquivoAberto = true;
+  }
+
+  fecharModalOpcoesArquivo() {
+    this.modalOpcoesArquivoAberto = false;
+    this.arquivoSelecionado = null;
+  }
+
   // ---------------- Usuários ----------------
   usuariosExcluidosIds: number[] = [];
 
@@ -720,7 +747,9 @@ export class AdminExplorerComponent implements OnInit {
 
   atualizarPermissoes(): void {
     if (!this.pastaParaPermissao || !this.pastaParaPermissao.id) {
-      this.handleError('ID da pasta para permissões não encontrado.');
+      this.toastService.showError(
+        'ID da pasta para permissões não encontrado.'
+      );
       return;
     }
 
@@ -737,20 +766,31 @@ export class AdminExplorerComponent implements OnInit {
       .filter((u) => !idsAtuais.has(u.id))
       .map((u) => u.id);
 
+    // ⚠️ Se não houve mudanças, não chama o backend
+    if (adicionarUsuariosIds.length === 0 && removerUsuariosIds.length === 0) {
+      this.toastService.showInfo('Nenhuma alteração de permissão foi feita.');
+      this.fecharModalPermissao();
+      return;
+    }
+
     const dto: PastaPermissaoAcaoDTO = {
       pastaId: this.pastaParaPermissao.id,
-      adicionarUsuariosIds: adicionarUsuariosIds,
-      removerUsuariosIds: removerUsuariosIds,
+      adicionarUsuariosIds,
+      removerUsuariosIds,
     };
 
     this.loading = true;
     this.adminService.atualizarPermissoesAcao(dto).subscribe({
       next: () => {
+        this.toastService.showSuccess('Permissões atualizadas com sucesso!');
         this.recarregarConteudo();
         this.fecharModalPermissao();
         this.loading = false;
       },
-      error: (err) => this.handleError('Erro ao atualizar permissões', err),
+      error: (err) => {
+        this.handleError('Erro ao atualizar permissões', err);
+        this.loading = false;
+      },
     });
   }
 
@@ -774,15 +814,29 @@ export class AdminExplorerComponent implements OnInit {
   private handleError(mensagemPadrao: string, err?: any): void {
     console.error(mensagemPadrao, err);
 
-    let errorMessage: string;
+    let errorMessage = mensagemPadrao;
 
-    if (err && typeof err === 'object') {
-      const backendError = err as ErrorMessage;
-
-      errorMessage = `Erro (${backendError.status} - ${
-        backendError.error || 'Erro desconhecido'
-      }): ${backendError.message || mensagemPadrao}`;
-    } else {
+    // Caso 1: Angular entregou um HttpErrorResponse com o JSON dentro de err.error
+    if (
+      err &&
+      err.error &&
+      typeof err.error === 'object' &&
+      'status' in err.error
+    ) {
+      const backend = err.error as ErrorMessage;
+      errorMessage = `Erro (${backend.status}${
+        backend.error ? ' - ' + backend.error : ''
+      }): ${backend.message || mensagemPadrao}`;
+    }
+    // Caso 2: Já é ErrorMessage (como no criarPasta que funcionava antes)
+    else if (err && typeof err === 'object' && 'status' in err) {
+      const backend = err as ErrorMessage;
+      errorMessage = `Erro (${backend.status}${
+        backend.error ? ' - ' + backend.error : ''
+      }): ${backend.message || mensagemPadrao}`;
+    }
+    // Fallback
+    else {
       errorMessage = mensagemPadrao;
     }
 
