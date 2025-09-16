@@ -11,11 +11,13 @@ import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import br.com.carro.services.ArquivoService;
 import br.com.carro.utils.AuthService;
+import com.nimbusds.jose.util.Resource;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
@@ -493,6 +496,45 @@ public class ArquivoController {
                     ));
         }
     }
+
+    @GetMapping("/visualizar/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE','BASIC')")
+    public ResponseEntity<?> visualizarArquivo(@PathVariable Long id,
+                                               Authentication authentication,
+                                               HttpServletRequest request) {
+        try {
+            Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+            return arquivoService.abrirNoNavegador(id, usuarioLogado);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
+                            "Arquivo não encontrado",
+                            e.getMessage(),
+                            request.getRequestURI()));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorMessage(HttpStatus.FORBIDDEN.value(),
+                            "Acesso negado",
+                            e.getMessage(),
+                            request.getRequestURI()));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro de leitura do arquivo",
+                            e.getMessage(),
+                            request.getRequestURI()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            "Erro inesperado",
+                            "Erro ao abrir o arquivo no navegador",
+                            request.getRequestURI()));
+        }
+    }
+
+
+
     // ✅ Método Auxiliar para zipar pasta recursivamente
     private void zipPastaRecursiva(Pasta pasta, String caminhoRelativo, ZipOutputStream zos) throws IOException {
         String prefixo = caminhoRelativo.isEmpty() ? "" : caminhoRelativo + "/";

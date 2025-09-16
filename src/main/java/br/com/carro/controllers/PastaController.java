@@ -26,6 +26,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -70,7 +71,7 @@ public class PastaController {
             ErrorMessage error = new ErrorMessage(
                     HttpStatus.FORBIDDEN.value(),
                     "Acesso negado",
-                    "Você não tem permissão para criar pastas.",
+                    "Você não tem permissão para criar pastas na raiz.",
                     request.getRequestURI()
             );
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
@@ -488,45 +489,70 @@ public class PastaController {
 
     // ✅ ENDPOINT 13 - Atualizar permissões de pastas
     @PostMapping("/permissao/acao")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')") // Apenas ADMIN e GERENTE podem tentar atualizar permissões
     public ResponseEntity<?> atualizarPermissoesAcao(@RequestBody PastaPermissaoAcaoDTO dto,
                                                      Authentication authentication,
                                                      HttpServletRequest httpRequest) {
         try {
             Usuario usuarioLogado = authService.getUsuarioLogado(authentication);
+
             pastaService.atualizarPermissoesAcao(
                     dto.pastaId(),
                     dto.adicionarUsuariosIds(),
                     dto.removerUsuariosIds(),
                     usuarioLogado
             );
-            return ResponseEntity.ok("Permissões atualizadas com sucesso");
+
+            // ✅ Resposta padronizada em JSON
+            PermissaoDTO sucesso = new PermissaoDTO(
+                    HttpStatus.OK.value(),
+                    "Permissões atualizadas com sucesso",
+                    "As permissões foram aplicadas à pasta de forma correta.",
+                    httpRequest.getRequestURI(),
+                    LocalDateTime.now()
+            );
+
+            return ResponseEntity.ok(sucesso);
+
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.value(),
-                            "Pasta não encontrada",
-                            e.getMessage(),
-                            httpRequest.getRequestURI()));
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Pasta não encontrada",
+                    e.getMessage(),
+                    httpRequest.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorMessage(HttpStatus.FORBIDDEN.value(),
-                            "Acesso negado",
-                            e.getMessage(),
-                            httpRequest.getRequestURI()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                            "Erro ao atualizar permissões",
-                            e.getMessage(),
-                            httpRequest.getRequestURI()));
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.FORBIDDEN.value(),
+                    "Acesso negado",
+                    e.getMessage(), // Mensagem já vem clara do service
+                    httpRequest.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
+        } catch (IllegalArgumentException e) {
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Dados inválidos",
+                    e.getMessage(),
+                    httpRequest.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
         } catch (Exception e) {
             logger.error("Erro inesperado ao atualizar permissões", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                            "Erro interno",
-                            "Erro inesperado no controller de permissões",
-                            httpRequest.getRequestURI()));
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Erro interno no servidor",
+                    "Erro inesperado ao atualizar permissões da pasta.",
+                    httpRequest.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+
 
     // ✅ ENDPOINT 14 - Listar usuários por pasta
     @GetMapping("/{id}/usuarios")

@@ -11,6 +11,7 @@ public record PastaCompletaDTO(
         String caminhoCompleto,
         LocalDateTime dataCriacao,
         LocalDateTime dataAtualizacao,
+        String criadoPor,                  // ✅ Novo campo: nome do usuário que criou
         List<ArquivoDTO> arquivos,
         List<PastaCompletaDTO> subPastas
 ) {
@@ -26,15 +27,20 @@ public record PastaCompletaDTO(
                 .toList()
                 : List.of();
 
-        // Inicialmente subPastas vazio, será preenchido pelo service recursivamente
+        // ✅ Pega o nome do usuário criador, se existir
+        String criadorNome = (pasta.getCriadoPor() != null)
+                ? pasta.getCriadoPor().getUsername()
+                : "Desconhecido";
+
         return new PastaCompletaDTO(
                 pasta.getId(),
                 pasta.getNomePasta(),
                 pasta.getCaminhoCompleto(),
                 pasta.getDataCriacao(),
                 pasta.getDataAtualizacao(),
+                criadorNome,
                 arquivosDTO,
-                List.of()
+                List.of() // Subpastas preenchidas depois no service
         );
     }
 
@@ -45,6 +51,7 @@ public record PastaCompletaDTO(
                 this.caminhoCompleto,
                 this.dataCriacao,
                 this.dataAtualizacao,
+                this.criadoPor,
                 this.arquivos,
                 subPastas
         );

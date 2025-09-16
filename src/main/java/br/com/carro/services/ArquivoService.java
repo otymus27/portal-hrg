@@ -4,8 +4,6 @@ import br.com.carro.entities.Arquivo;
 import br.com.carro.entities.Pasta;
 import br.com.carro.entities.Usuario.Usuario;
 import br.com.carro.entities.DTO.ArquivoDTO;
-import br.com.carro.exceptions.ArquivoNaoEncontradoException;
-import br.com.carro.exceptions.PermissaoNegadaException;
 import br.com.carro.repositories.ArquivoRepository;
 import br.com.carro.repositories.PastaRepository;
 import br.com.carro.utils.ArquivoUtils;
@@ -13,13 +11,15 @@ import br.com.carro.utils.FileUtils;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
@@ -27,7 +27,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -427,6 +426,38 @@ public class ArquivoService {
                 .sorted(comparator)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Retorna o arquivo para ser exibido no navegador (Content-Disposition: inline).
+     */
+    public ResponseEntity<Resource> abrirNoNavegador(Long arquivoId, Usuario usuarioLogado) throws IOException {
+        Arquivo arquivo = arquivoRepository.findById(arquivoId)
+                .orElseThrow(() -> new EntityNotFoundException("Arquivo não encontrado com ID: " + arquivoId));
+
+        // 🔒 Verifica permissão
+        if (!arquivo.getPasta().getUsuariosComPermissao().contains(usuarioLogado)) {
+            throw new AccessDeniedException("Você não possui permissão para acessar este arquivo.");
+        }
+
+        Path caminho = Paths.get(arquivo.getCaminhoArmazenamento());
+        if (!Files.exists(caminho)) {
+            throw new FileNotFoundException("Arquivo não encontrado no sistema de arquivos.");
+        }
+
+        // Detecta o tipo MIME automaticamente
+        String contentType = Files.probeContentType(caminho);
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        Resource resource = new FileSystemResource(caminho);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + arquivo.getNomeArquivo() + "\"")
+                .body(resource);
+    }
+
 
 
 }

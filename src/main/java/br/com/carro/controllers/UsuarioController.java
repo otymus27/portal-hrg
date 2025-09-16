@@ -51,7 +51,7 @@ public class UsuarioController {
 
     // Listar registros com paginação, filtros e ordenação
     // ✅ Apenas usuários com a role 'ADMIN' podem acessar este método para gerenciar usuários.
-    @PreAuthorize("hasRole('ADMIN')") // CORRIGIDO: Era 'ROLE_ADMIN', agora é 'ADMIN'
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     @GetMapping
     public ResponseEntity<Page<Usuario>> listar(
             @RequestParam(defaultValue = "0") int page,

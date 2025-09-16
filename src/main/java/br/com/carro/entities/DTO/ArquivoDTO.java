@@ -9,7 +9,8 @@ public record ArquivoDTO(
         String tipo,
         Long tamanho,
         LocalDateTime dataUpload,
-        LocalDateTime dataAtualizacao
+        LocalDateTime dataAtualizacao,
+        String criadoPor
 ) {
     public static ArquivoDTO fromEntity(Arquivo arquivo) {
         return new ArquivoDTO(
@@ -18,7 +19,8 @@ public record ArquivoDTO(
                 arquivo.getTipoMime(),
                 arquivo.getTamanho(),
                 arquivo.getDataUpload(),
-                arquivo.getDataAtualizacao()
+                arquivo.getDataAtualizacao(),
+                arquivo.getCriadoPor().getUsername()
         );
     }
 }

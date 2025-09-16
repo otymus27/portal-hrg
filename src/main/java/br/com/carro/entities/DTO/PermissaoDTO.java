@@ -1,13 +1,13 @@
 package br.com.carro.entities.DTO;
 
-import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 
 public record PermissaoDTO(
-        @NotNull(message = "O ID do usuário não pode ser nulo.")
-        Long usuarioId,
-
-        @NotNull(message = "O ID da pasta não pode ser nulo.")
-        Long pastaId
+        int status,
+        String mensagem,
+        String detalhe,
+        String path,
+        LocalDateTime timestamp
 ) {
 }
 

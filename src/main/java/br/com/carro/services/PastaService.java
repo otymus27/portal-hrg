@@ -51,17 +51,49 @@ public class PastaService {
             throw new SecurityException("Usuário não autenticado.");
         }
 
-        // Busca a pasta pai se existir
         Pasta pastaPai = null;
         if (pastaDTO.pastaPaiId() != null) {
             pastaPai = pastaRepository.findById(pastaDTO.pastaPaiId())
                     .orElseThrow(() -> new EntityNotFoundException("Pasta pai não encontrada."));
         }
 
-        // valida permissões (lança AccessDeniedException se não permitido)
-        validarPermissaoCriacao(usuarioLogado, pastaPai);
+        // Sempre pega o ADMIN
+        Usuario admin = usuarioRepository.findByUsername("admin")
+                .orElseThrow(() -> new EntityNotFoundException("Usuário ADMIN não encontrado."));
 
-        // Determina caminho da nova pasta
+        Set<Usuario> usuariosComPermissao = new HashSet<>();
+
+        if (pastaPai == null) {
+            // ==========================
+            // 📂 Pasta Raiz
+            // ==========================
+            if (!usuarioLogado.equals(admin)) {
+                throw new AccessDeniedException("Somente o ADMIN pode criar pastas raiz.");
+            }
+
+            usuariosComPermissao.add(admin); // Admin sempre dono
+            if (pastaDTO.usuariosComPermissaoIds() != null && !pastaDTO.usuariosComPermissaoIds().isEmpty()) {
+                Set<Usuario> extras = usuarioRepository.findAllById(pastaDTO.usuariosComPermissaoIds())
+                        .stream().collect(Collectors.toSet());
+
+                if (extras.size() != pastaDTO.usuariosComPermissaoIds().size()) {
+                    throw new IllegalArgumentException("Um ou mais IDs de usuário fornecidos não são válidos.");
+                }
+                usuariosComPermissao.addAll(extras);
+            }
+
+        } else {
+            // ==========================
+            // 📂 Subpasta
+            // ==========================
+            validarPermissaoCriacao(usuarioLogado, pastaPai);
+
+            usuariosComPermissao.add(admin); // Admin sempre dono
+            usuariosComPermissao.addAll(pastaPai.getUsuariosComPermissao()); // Herdar donos da pasta pai
+            usuariosComPermissao.add(usuarioLogado); // Criador também dono
+        }
+
+        // Caminho físico
         String caminhoPastaPai = (pastaPai != null) ? pastaPai.getCaminhoCompleto() : rootDirectory;
         Path caminhoPasta = Paths.get(caminhoPastaPai, FileUtils.sanitizeFileName(pastaDTO.nome()));
 
@@ -75,22 +107,7 @@ public class PastaService {
             throw new RuntimeException("Erro ao criar a pasta no sistema de arquivos.", e);
         }
 
-        Set<Usuario> usuariosComPermissao = new HashSet<>();
-
-        if (pastaDTO.usuariosComPermissaoIds() != null && !pastaDTO.usuariosComPermissaoIds().isEmpty()) {
-            // Busca usuários com permissão
-            usuariosComPermissao = usuarioRepository.findAllById(pastaDTO.usuariosComPermissaoIds())
-                    .stream().collect(Collectors.toSet());
-
-            if (usuariosComPermissao.size() != pastaDTO.usuariosComPermissaoIds().size()) {
-                throw new IllegalArgumentException("Um ou mais IDs de usuário fornecidos não são válidos.");
-            }
-        } else {
-            // Nenhum usuário informado → adiciona o usuário logado como padrão
-            usuariosComPermissao.add(usuarioLogado);
-        }
-
-        // Cria e salva a nova pasta
+        // Criação da entidade
         Pasta novaPasta = new Pasta();
         novaPasta.setNomePasta(pastaDTO.nome());
         novaPasta.setCaminhoCompleto(caminhoPasta.toString());
@@ -98,12 +115,15 @@ public class PastaService {
         novaPasta.setDataAtualizacao(LocalDateTime.now());
         novaPasta.setCriadoPor(usuarioLogado);
         novaPasta.setUsuariosComPermissao(usuariosComPermissao);
+
         if (pastaPai != null) {
             novaPasta.setPastaPai(pastaPai);
         }
 
         return pastaRepository.save(novaPasta);
     }
+
+
 
 
     // ✅ Método adicional para listar pastas raiz
@@ -186,6 +206,7 @@ public class PastaService {
                 pasta.getCaminhoCompleto(),
                 pasta.getDataCriacao(),
                 pasta.getDataAtualizacao(),
+                pasta.getCriadoPor().getUsername(),
                 arquivosFiltrados,
                 subPastasDTO
         );
@@ -796,22 +817,59 @@ public class PastaService {
 
     // ✅ ENDPOINT  - Adicionar e Remover permissão a pastas para usuario
     @Transactional
-    public void atualizarPermissoesAcao(Long pastaId, Set<Long> adicionarIds, Set<Long> removerIds, Usuario usuarioLogado)throws AccessDeniedException {
+    public void atualizarPermissoesAcao(Long pastaId, Set<Long> adicionarIds, Set<Long> removerIds, Usuario usuarioLogado)
+            throws AccessDeniedException {
+
         Pasta pasta = pastaRepository.findById(pastaId)
                 .orElseThrow(() -> new EntityNotFoundException("Pasta não encontrada"));
 
-        // Adicionar novos usuários
+        // ✅ Verifica se o usuário logado pode gerenciar permissões
+        boolean isAdmin = usuarioLogado.getRoles().stream()
+                .anyMatch(r -> r.getNome().equalsIgnoreCase("ADMIN"));
+
+        boolean isCriador = pasta.getCriadoPor() != null &&
+                pasta.getCriadoPor().getId().equals(usuarioLogado.getId());
+
+        if (!isAdmin && !isCriador) {
+            throw new AccessDeniedException("Somente o ADMIN ou o criador da pasta pode alterar permissões.");
+        }
+
+        // ========================
+        // ADICIONAR NOVOS USUÁRIOS
+        // ========================
         if (adicionarIds != null && !adicionarIds.isEmpty()) {
             Set<Usuario> usuariosParaAdicionar = new HashSet<>(usuarioRepository.findAllById(adicionarIds));
             pasta.getUsuariosComPermissao().addAll(usuariosParaAdicionar);
         }
 
-        // Remover usuários
+        // ========================
+        // REMOVER USUÁRIOS
+        // ========================
         if (removerIds != null && !removerIds.isEmpty()) {
             Set<Usuario> usuariosParaRemover = new HashSet<>(usuarioRepository.findAllById(removerIds));
-            pasta.getUsuariosComPermissao().removeAll(usuariosParaRemover);
+
+            for (Usuario usuarioRemover : usuariosParaRemover) {
+                // ❌ Regra 1: nunca remover o ADMIN
+                boolean isUsuarioAdmin = usuarioRemover.getRoles().stream()
+                        .anyMatch(r -> r.getNome().equalsIgnoreCase("ADMIN"));
+                if (isUsuarioAdmin) {
+                    throw new IllegalArgumentException("Não é permitido remover o ADMIN da pasta.");
+                }
+
+                // ❌ Regra 2: nunca remover o criador da pasta
+                if (pasta.getCriadoPor() != null &&
+                        pasta.getCriadoPor().getId().equals(usuarioRemover.getId())) {
+                    throw new IllegalArgumentException("Não é permitido remover o criador da pasta.");
+                }
+
+                pasta.getUsuariosComPermissao().remove(usuarioRemover);
+            }
         }
+
+        pasta.setDataAtualizacao(LocalDateTime.now());
+        pastaRepository.save(pasta);
     }
+
 
     //----------------------------------------------------------------------//
 
