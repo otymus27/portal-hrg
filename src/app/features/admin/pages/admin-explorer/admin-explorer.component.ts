@@ -241,7 +241,7 @@ export class AdminExplorerComponent implements OnInit {
   uploadArquivos(): void {
     const pastaAtual = this.obterPastaAtual();
     if (!pastaAtual)
-      return this.handleError('Selecione uma pasta antes do upload');
+      return this.handleError('Selecione um arquivo para fazer upload.');
     if (!this.arquivosParaUpload.length) return;
 
     this.loading = true;
@@ -322,6 +322,7 @@ export class AdminExplorerComponent implements OnInit {
     this.loading = true;
     request.subscribe({
       next: () => {
+        this.toastService.showSuccess('Exclusão feita com sucesso!');
         this.recarregarConteudo();
         this.fecharModalExcluir();
         this.loading = false;
@@ -381,6 +382,7 @@ export class AdminExplorerComponent implements OnInit {
 
     forkJoin(requests).subscribe({
       next: () => {
+        this.toastService.showSuccess('Exclusão feita com sucesso!');
         this.itensSelecionados = [];
         this.recarregarConteudo();
         this.fecharModalExcluirSelecionados();

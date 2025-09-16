@@ -193,7 +193,7 @@ export class AdminService {
 
   excluirArquivo(id: number): Observable<void> {
     return this.http
-      .delete<void>(`${this.apiUrlAdminArquivos}/arquivos/${id}`)
+      .delete<void>(`${this.apiUrlAdminArquivos}/${id}`)
       .pipe(catchError(this.tratarErro));
   }
 
