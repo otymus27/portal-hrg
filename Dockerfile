@@ -6,8 +6,9 @@ FROM maven:3.9.6-eclipse-temurin-17-focal AS build
 # Define o diretório de trabalho no contêiner
 WORKDIR /app
 
-# Copia os arquivos de configuração do Maven (pom.xml) para acelerar o build
+# Copiar o pom.xml e baixar dependências (melhora cache do build)
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
 # Copia o código-fonte
 COPY src ./src
@@ -29,5 +30,5 @@ COPY --from=build /app/target/*.jar app.jar
 # Expõe a porta que o seu aplicativo Spring Boot usa
 EXPOSE 8082
 
-# Define o comando para executar a aplicação
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Ativar perfil de produção automaticamente
+ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
