@@ -51,27 +51,32 @@ public class PastaService {
             throw new SecurityException("Usuário não autenticado.");
         }
 
+        // Pasta pai (se for subpasta)
         Pasta pastaPai = null;
         if (pastaDTO.pastaPaiId() != null) {
             pastaPai = pastaRepository.findById(pastaDTO.pastaPaiId())
                     .orElseThrow(() -> new EntityNotFoundException("Pasta pai não encontrada."));
         }
 
-        // Sempre pega o ADMIN
-        Usuario admin = usuarioRepository.findByUsername("admin")
-                .orElseThrow(() -> new EntityNotFoundException("Usuário ADMIN não encontrado."));
-
+        // Conjunto de usuários com permissão
         Set<Usuario> usuariosComPermissao = new HashSet<>();
 
+        // ======================================================
+        // 📂 Criando PASTA RAIZ
+        // ======================================================
         if (pastaPai == null) {
-            // ==========================
-            // 📂 Pasta Raiz
-            // ==========================
-            if (!usuarioLogado.equals(admin)) {
-                throw new AccessDeniedException("Somente o ADMIN pode criar pastas raiz.");
+            boolean isAdmin = usuarioRepository.existsByUsernameAndRolesNome(
+                    usuarioLogado.getUsername(), "ADMIN"
+            );
+
+            if (!isAdmin) {
+                throw new AccessDeniedException("Somente administradores podem criar pastas raiz.");
             }
 
-            usuariosComPermissao.add(admin); // Admin sempre dono
+            // Admin logado sempre dono
+            usuariosComPermissao.add(usuarioLogado);
+
+            // Se vierem permissões adicionais, adiciona
             if (pastaDTO.usuariosComPermissaoIds() != null && !pastaDTO.usuariosComPermissaoIds().isEmpty()) {
                 Set<Usuario> extras = usuarioRepository.findAllById(pastaDTO.usuariosComPermissaoIds())
                         .stream().collect(Collectors.toSet());
@@ -81,19 +86,30 @@ public class PastaService {
                 }
                 usuariosComPermissao.addAll(extras);
             }
-
-        } else {
-            // ==========================
-            // 📂 Subpasta
-            // ==========================
-            validarPermissaoCriacao(usuarioLogado, pastaPai);
-
-            usuariosComPermissao.add(admin); // Admin sempre dono
-            usuariosComPermissao.addAll(pastaPai.getUsuariosComPermissao()); // Herdar donos da pasta pai
-            usuariosComPermissao.add(usuarioLogado); // Criador também dono
         }
 
-        // Caminho físico
+        // ======================================================
+        // 📂 Criando SUBPASTA
+        // ======================================================
+        else {
+            validarPermissaoCriacao(usuarioLogado, pastaPai);
+
+            // ✅ Sempre adicionar todos os administradores
+            List<Usuario> admins = usuarioRepository.findByRolesNome("ADMIN");
+            usuariosComPermissao.addAll(admins);
+
+            // ✅ Herdar donos da pasta pai
+            if (pastaPai.getUsuariosComPermissao() != null) {
+                usuariosComPermissao.addAll(pastaPai.getUsuariosComPermissao());
+            }
+
+            // ✅ Criador também dono (pode ser gerente ou admin)
+            usuariosComPermissao.add(usuarioLogado);
+        }
+
+        // ======================================================
+        // 📂 Criação no Sistema de Arquivos
+        // ======================================================
         String caminhoPastaPai = (pastaPai != null) ? pastaPai.getCaminhoCompleto() : rootDirectory;
         Path caminhoPasta = Paths.get(caminhoPastaPai, FileUtils.sanitizeFileName(pastaDTO.nome()));
 
@@ -107,7 +123,9 @@ public class PastaService {
             throw new RuntimeException("Erro ao criar a pasta no sistema de arquivos.", e);
         }
 
-        // Criação da entidade
+        // ======================================================
+        // 📂 Persistência no Banco
+        // ======================================================
         Pasta novaPasta = new Pasta();
         novaPasta.setNomePasta(pastaDTO.nome());
         novaPasta.setCaminhoCompleto(caminhoPasta.toString());
@@ -122,7 +140,6 @@ public class PastaService {
 
         return pastaRepository.save(novaPasta);
     }
-
 
 
 
@@ -893,31 +910,38 @@ public class PastaService {
             throw new AccessDeniedException("Usuário não autenticado.");
         }
 
-        // Admin sempre pode
-        if (Boolean.TRUE.equals(usuario.isAdmin())) {
-            logger.debug("Usuário é admin — permissão concedida.");
+        // ==========================
+        // ✅ Admins SEMPRE podem
+        // ==========================
+        boolean isAdmin = usuario.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            logger.debug("Usuário {} é ADMIN — permissão concedida.", usuario.getUsername());
             return;
         }
 
-        // Se não for admin, não pode criar na raiz (pastaPai == null)
+        // ==========================
+        // ❌ Gerente ou Básico criando na raiz
+        // ==========================
         if (pastaPai == null) {
             logger.warn("Usuário {} tentou criar pasta raiz sem ser admin", usuario.getUsername());
-            throw new AccessDeniedException("Gerentes devem criar pastas dentro de uma pasta existente.");
+            throw new AccessDeniedException("Somente administradores podem criar pastas raiz.");
         }
 
-        // Verifica permissões comparando pelo ID (mais robusto)
-        boolean temPermissao = false;
-        if (pastaPai.getUsuariosComPermissao() != null) {
-            temPermissao = pastaPai.getUsuariosComPermissao().stream()
-                    .anyMatch(u -> u != null && u.getId() != null && u.getId().equals(usuario.getId()));
-        }
+        // ==========================
+        // 🔑 Gerente/Básico criando SUBPASTA
+        // ==========================
+        boolean temPermissao = pastaPai.getUsuariosComPermissao() != null &&
+                pastaPai.getUsuariosComPermissao().stream()
+                        .anyMatch(u -> u != null && u.getId() != null && u.getId().equals(usuario.getId()));
 
         if (!temPermissao) {
             logger.warn("Usuário {} não tem permissão na pastaPai id={}", usuario.getUsername(), pastaPai.getId());
             throw new AccessDeniedException("Você não tem permissão para criar pastas neste local.");
         }
 
-        logger.debug("Permissão validada: usuário {} pode criar na pasta {}", usuario.getUsername(), pastaPai.getId());
+        logger.debug("Permissão validada: usuário {} pode criar subpasta em {}", usuario.getUsername(), pastaPai.getNomePasta());
     }
 
 

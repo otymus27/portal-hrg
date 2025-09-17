@@ -64,6 +64,7 @@ public class UsuarioService {
             }
         }
 
+        usuario.setNome(usuario.getNome());
         usuario.setRoles(roles);
 
         try {
@@ -116,8 +117,9 @@ public class UsuarioService {
         Usuario usuarioExistente = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com id " + id));
 
-        // Atualizar username
+        // Atualizar username e nome
         usuarioExistente.setUsername(usuarioComNovosDados.getUsername());
+        usuarioExistente.setNome(usuarioComNovosDados.getNome());
 
         // ✅ Atualizar roles
         if (usuarioComNovosDados.getRoles() != null) {
@@ -187,6 +189,7 @@ public class UsuarioService {
         return new UsuarioLogadoDTO(
                 usuario.getId(),
                 usuario.getUsername(),
+                usuario.getNome(),
                 pastasIds,
                 rolesDto
         );

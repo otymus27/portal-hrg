@@ -1,5 +1,7 @@
 package br.com.carro.services;
 
+import br.com.carro.entities.LoginAudit;
+import br.com.carro.repositories.LoginAuditRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -16,9 +18,11 @@ import java.util.stream.Collectors;
 public class TokenService {
 
     private final JwtEncoder jwtEncoder;
+    private final LoginAuditRepository loginAuditRepository;
 
-    public TokenService(JwtEncoder jwtEncoder) {
+    public TokenService(JwtEncoder jwtEncoder, LoginAuditRepository loginAuditRepository) {
         this.jwtEncoder = jwtEncoder;
+        this.loginAuditRepository = loginAuditRepository;
     }
 
     public String gerarToken(Authentication authentication) {
@@ -42,6 +46,9 @@ public class TokenService {
 
         // >>> Header COM algoritmo HS256 <<<
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
+
+        // ✅ Registrar login no banco
+        loginAuditRepository.save(new LoginAudit(authentication.getName()));
 
         return jwtEncoder
                 .encode(JwtEncoderParameters.from(header, claims))

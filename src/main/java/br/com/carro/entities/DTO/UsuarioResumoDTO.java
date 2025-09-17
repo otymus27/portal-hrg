@@ -6,13 +6,15 @@ import br.com.carro.entities.Usuario.Usuario;
 //Traz a lista de usuarios por pasta
 public record UsuarioResumoDTO(
         Long id,
-        String username
+        String username,
+        String nome
 
 ) {
     public static UsuarioResumoDTO fromEntity(Usuario usuario) {
         return new UsuarioResumoDTO(
                 usuario.getId(),
-                usuario.getUsername()
+                usuario.getUsername(),
+                usuario.getNome()
         );
     }
 }

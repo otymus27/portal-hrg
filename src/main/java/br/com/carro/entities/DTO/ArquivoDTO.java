@@ -10,9 +10,14 @@ public record ArquivoDTO(
         Long tamanho,
         LocalDateTime dataUpload,
         LocalDateTime dataAtualizacao,
-        String criadoPor
+        String criadoPor                  // ✅ Nome do criador ou valor padrão
 ) {
     public static ArquivoDTO fromEntity(Arquivo arquivo) {
+        // ✅ Evita NullPointerException caso criadoPor seja nulo
+        String criadorNome = (arquivo.getCriadoPor() != null && arquivo.getCriadoPor().getUsername() != null)
+                ? arquivo.getCriadoPor().getUsername()
+                : "Sistema";
+
         return new ArquivoDTO(
                 arquivo.getId(),
                 arquivo.getNomeArquivo(),
@@ -20,7 +25,7 @@ public record ArquivoDTO(
                 arquivo.getTamanho(),
                 arquivo.getDataUpload(),
                 arquivo.getDataAtualizacao(),
-                arquivo.getCriadoPor().getUsername()
+                criadorNome
         );
     }
 }

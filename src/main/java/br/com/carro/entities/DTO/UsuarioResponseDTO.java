@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 public record UsuarioResponseDTO(
         Long id,
         String username,
+        String nome,
         Set<RoleDto> roles
 ) {
     public record RoleDto(Long id, String nome) {}
@@ -20,6 +21,7 @@ public record UsuarioResponseDTO(
         return new UsuarioResponseDTO(
                 usuario.getId(),
                 usuario.getUsername(),
+                usuario.getNome(),
                 rolesDto
         );
     }

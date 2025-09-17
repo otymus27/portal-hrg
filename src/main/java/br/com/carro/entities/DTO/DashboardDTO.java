@@ -24,7 +24,10 @@ public record DashboardDTO(
 
         // --- Distribuições ---
         Map<String, Long> distribuicaoPorTipo,  // Quantidade de arquivos agrupados por tipo/extensão (pdf -> 100, docx -> 45)
-        Map<String, Long> topTiposPorEspaco     // Consumo de espaço por tipo de arquivo (pdf -> 200MB, etc)
+        Map<String, Long> topTiposPorEspaco,     // Consumo de espaço por tipo de arquivo (pdf -> 200MB, etc)
 
+        // ✅ Novos campos
+        long usuariosAtivosAgora,
+        long usuariosLogaramHoje
 ) {}
 

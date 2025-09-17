@@ -31,6 +31,9 @@ public class Usuario implements UserDetails {
     @Column(unique = true)
     private String username;
     private String password;
+    // ✅ Novo campo: Nome completo do usuário
+    @Column(name = "nome_completo", nullable = false, length = 150)
+    private String nome;
 
     /**
      * Indica se a senha atual é provisória.

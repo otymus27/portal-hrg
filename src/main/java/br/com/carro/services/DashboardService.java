@@ -1,5 +1,6 @@
 package br.com.carro.services;
 
+import br.com.carro.autenticacao.SessionTracker;
 import br.com.carro.entities.DTO.DashboardDTO;
 import br.com.carro.repositories.DashboardRepository;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,11 @@ import java.util.stream.Collectors;
 public class DashboardService {
 
     private final DashboardRepository dashboardRepository;
+    private final SessionTracker sessionTracker;
 
-    public DashboardService(DashboardRepository dashboardRepository) {
+    public DashboardService(DashboardRepository dashboardRepository, SessionTracker sessionTracker) {
         this.dashboardRepository = dashboardRepository;
+        this.sessionTracker = sessionTracker;
     }
 
     /**
@@ -47,7 +50,7 @@ public class DashboardService {
         Map<LocalDate, Long> uploadsPorDia = dashboardRepository.contarUploadsPorDia(inicio)
                 .stream()
                 .collect(Collectors.toMap(
-                        obj -> ((LocalDateTime) obj[0]).toLocalDate(), // ✅ converte para LocalDate
+                        obj -> ((LocalDateTime) obj[0]).toLocalDate(),
                         obj -> (Long) obj[1],
                         Long::sum,
                         LinkedHashMap::new
@@ -99,6 +102,13 @@ public class DashboardService {
                 ));
 
         // ========================
+        // USUÁRIOS (SessionTracker)      // ========================
+
+
+        long usuariosAtivosAgora = dashboardRepository.contarUsuariosAtivosAgora();
+        long usuariosLogaramHoje = dashboardRepository.contarUsuariosLogaramHoje();
+
+        // ========================
         // RETORNA DTO FINAL
         // ========================
         return new DashboardDTO(
@@ -111,7 +121,9 @@ public class DashboardService {
                 topUsuariosPorUpload,
                 topUsuariosPorEspaco,
                 distribuicaoPorTipo,
-                topTiposPorEspaco
+                topTiposPorEspaco,
+                usuariosAtivosAgora,
+                usuariosLogaramHoje
         );
     }
 }

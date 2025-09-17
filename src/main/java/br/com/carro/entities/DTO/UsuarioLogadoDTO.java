@@ -10,6 +10,7 @@ import java.util.Set;
 public record UsuarioLogadoDTO(
         Long id,
         String username,
+        String nome,
         Set<Long> pastasPrincipaisAcessadasIds,
         Set<RoleDto> roles
 ) {

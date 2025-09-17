@@ -88,6 +88,7 @@ public class UsuarioController {
             // Converte DTO para entidade
             Usuario usuario = new Usuario();
             usuario.setUsername(usuarioCreateDTO.username());
+            usuario.setNome(usuarioCreateDTO.nome());
             usuario.setPassword(passwordEncoder.encode(usuarioCreateDTO.password()));
 
             // Extrai role IDs

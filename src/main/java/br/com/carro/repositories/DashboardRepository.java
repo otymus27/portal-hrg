@@ -96,4 +96,12 @@ public interface DashboardRepository extends JpaRepository<Arquivo, Long> {
             "GROUP BY a.tipoMime " +
             "ORDER BY SUM(a.tamanho) DESC")
     List<Object[]> topTiposPorEspaco();
+
+    // Usuários que logaram hoje
+    @Query(value = "SELECT COUNT(DISTINCT username) FROM tb_login_audit WHERE DATE(data_login) = CURRENT_DATE", nativeQuery = true)
+    long contarUsuariosLogaramHoje();
+
+    // Usuários ativos agora (últimos 5 minutos, por exemplo)
+    @Query(value = "SELECT COUNT(DISTINCT username) FROM tb_login_audit WHERE data_login >= (NOW() - INTERVAL 5 MINUTE)", nativeQuery = true)
+    long contarUsuariosAtivosAgora();
 }
