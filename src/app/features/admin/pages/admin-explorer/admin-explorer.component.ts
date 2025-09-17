@@ -489,28 +489,27 @@ export class AdminExplorerComponent implements OnInit {
 
   copiarPasta(): void {
     if (!this.pastaParaCopiar) return;
-
-    const destinoId = this.pastaDestinoSelecionada
-      ? this.pastaDestinoSelecionada.id.toString()
-      : undefined;
-
+  
+    const destinoId = this.pastaDestinoSelecionada?.id?.toString();
+  
     this.loading = true;
     this.adminService
       .copiarPasta(this.pastaParaCopiar.id.toString(), destinoId)
       .subscribe({
         next: (novaPasta) => {
-          // Atualiza conteúdo
           this.recarregarConteudo();
-
-          // Fecha modal
           this.fecharModalCopiarPasta();
-
-          // Remove loading
           this.loading = false;
         },
-        error: (err) => this.handleError('Erro ao copiar pasta', err),
+        error: (err) => {
+          this.handleError('Erro ao copiar pasta', err);
+          this.loading = false;
+        },
       });
   }
+  
+  
+  
 
   // -- Mover ou recortar pasta --
   // ---------------- Mover Pasta ----------------

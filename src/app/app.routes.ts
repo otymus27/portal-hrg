@@ -11,6 +11,7 @@ import { ExplorerComponent } from './features/public/pages/explorer/explorer.com
 // Componentes Admin
 import { AdminExplorerComponent } from './features/admin/pages/admin-explorer/admin-explorer.component';
 import { DashboardComponent } from './features/admin/pages/dashboard/dashboard.component';
+import { AlterarSenhaComponent } from './components/alterar-senha/alterar-senha.component';
 
 export const routes: Routes = [
   // --- Rotas Públicas ---
@@ -65,6 +66,18 @@ export const routes: Routes = [
             path: 'gerenciar',
             component: UsuarioComponent,
             data: { roles: ['ADMIN'] },
+          },
+        ],
+      },
+
+      // Rota para usuario logado redefinir sua propria senha
+      {
+        path: 'perfil',
+        children: [
+          {
+            path: 'alterar-senha',
+            component: AlterarSenhaComponent,
+            data: { roles: ['ADMIN', 'GERENTE', 'BASIC'] }, // todos os logados podem alterar
           },
         ],
       },

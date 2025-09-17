@@ -386,7 +386,7 @@
 <div class="modal-backdrop" *ngIf="modalCopiarPastaAberto">
   <div class="modal-custom">
     <h3>Copiar Pasta</h3>
-    <select [(ngModel)]="pastaDestinoSelec" class="form-select mb-3">
+    <select [(ngModel)]="pastaDestinoSelecionada" class="form-select mb-3">
       <option *ngFor="let p of pastasDisponiveisParaCopiar" [ngValue]="p">
         {{ p.nomePasta }}
       </option>

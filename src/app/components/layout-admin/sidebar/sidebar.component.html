@@ -76,5 +76,18 @@
         </li>
       </ul>
     </li>
+
+    <!-- Menu Perfil - visível para todos logados -->
+    <li class="nav-item" *ngIf="isLogado()">
+      <a
+        class="nav-link"
+        routerLink="/admin/perfil/alterar-senha"
+        routerLinkActive="active"
+        (click)="hideAllSubmenus()"
+      >
+        <i class="bi bi-key"></i>
+        <span>Alterar Senha</span>
+      </a>
+    </li>
   </ul>
 </div>

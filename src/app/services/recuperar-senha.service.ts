@@ -5,14 +5,20 @@ import { RecuperarSenhaRequest } from '../models/recuperar-senha-request';
 import { ResetSenhaRequest } from '../models/reset-senha-request';
 import { environment } from '../../environment/environment.prod';
 
+// Novo DTO para alteração com usuário logado
+export interface AlterarSenhaRequest {
+  senhaAtual: string;
+  novaSenha: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class RecuperarSenhaService {
   private http = inject(HttpClient);
- 
+
   // URL base da API (poderia ser movida para environment.ts)
-  private readonly API_URL = environment.apiUrl+'/api/recuperar';
+  private readonly API_URL = environment.apiUrl + '/api/recuperar';
 
   // Endpoint para o ADMIN
   // ✅ Método que gera uma senha provisória com base no ID
@@ -26,5 +32,10 @@ export class RecuperarSenhaService {
   // Endpoint para o usuário
   atualizarSenha(dto: ResetSenhaRequest): Observable<any> {
     return this.http.post(`${this.API_URL}/redefinir-senha`, dto);
+  }
+
+  // ✅ Novo método para usuário logado
+  alterarSenha(dto: AlterarSenhaRequest): Observable<any> {
+    return this.http.put(`${this.API_URL}/alterar-senha`, dto);
   }
 }

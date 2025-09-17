@@ -64,4 +64,10 @@ export class SidebarComponent {
     const roles = this.authService.getLoggedInRoles();
     return roles.includes('BASIC');
   }
+
+  // ✅ Método para verificar se o usuário é está logado
+  isLogado(): boolean {
+    const roles = this.authService.getLoggedInRoles();
+    return roles.length > 0; // se tem role, está logado
+  }
 }

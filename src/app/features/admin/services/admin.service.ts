@@ -226,20 +226,19 @@ export class AdminService {
       .pipe(catchError(this.tratarErro));
   }
 
-  copiarPasta(
-    id: string,
-    destinoPastaId?: string | number
-  ): Observable<PastaAdmin> {
+  copiarPasta(id: string, destinoPastaId?: string | number): Observable<PastaAdmin> {
     let params = new HttpParams();
     if (destinoPastaId !== undefined && destinoPastaId !== null) {
       params = params.set('destinoPastaId', String(destinoPastaId));
     }
-    return this.http
-      .post<PastaAdmin>(`${this.apiUrlAdminPastas}/${id}/copiar`, null, {
-        params,
-      })
-      .pipe(catchError(this.tratarErro));
+  
+    return this.http.post<PastaAdmin>(
+      `${this.apiUrlAdminPastas}/${id}/copiar`,
+      {}, // ⚠️ não usar null!
+      { params }
+    ).pipe(catchError(this.tratarErro));
   }
+  
 
   moverPasta(idPasta: number, novaPastaPaiId?: number): Observable<PastaAdmin> {
     const params: any = novaPastaPaiId !== undefined ? { novaPastaPaiId } : {};
