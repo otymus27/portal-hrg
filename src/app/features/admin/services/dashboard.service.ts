@@ -18,6 +18,8 @@ export interface DashboardMetrics {
   topUsuariosPorEspaco: MetricData[];
   distribuicaoPorTipo: MetricData[];
   topTiposPorEspaco: MetricData[];
+  usuariosAtivosAgora: number;
+  usuariosLogaramHoje: number;
 }
 
 interface RawDashboardData {
@@ -31,6 +33,8 @@ interface RawDashboardData {
   topUsuariosPorEspaco: Record<string, number>;
   distribuicaoPorTipo: Record<string, number>;
   topTiposPorEspaco: Record<string, number>;
+  usuariosAtivosAgora: number;
+  usuariosLogaramHoje: number;
 }
 
 @Injectable({

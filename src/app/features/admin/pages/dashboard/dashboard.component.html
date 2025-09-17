@@ -13,6 +13,18 @@
       <h3>Espaço Total Utilizado</h3>
       <p class="metric">{{ formatBytes(dashboardData.totalEspacoBytes) }}</p>
     </div>
+
+    <!-- ✅ Novo campo: usuários ativos -->
+    <div class="card">
+      <h3>Usuários Ativos Agora</h3>
+      <p class="metric">{{ dashboardData.usuariosAtivosAgora }}</p>
+    </div>
+
+    <!-- ✅ Novo campo: usuários logaram hoje -->
+    <div class="card">
+      <h3>Usuários que Logaram Hoje</h3>
+      <p class="metric">{{ dashboardData.usuariosLogaramHoje }}</p>
+    </div>
   </div>
 
   <!-- Gráficos Linha e Barras -->
