@@ -148,6 +148,7 @@ export class UsuarioComponent {
     this.registroSelecionado = {
       id: 0,
       username: '',
+      nome: '',
       password: '',
       roles: [], // Inicializa com um array vazio de objetos Role
     };
@@ -176,6 +177,7 @@ export class UsuarioComponent {
     this.registroSelecionado = {
       id: usuario.id,
       username: usuario.username,
+      nome: usuario.nome,
       roles: rolesSelecionados, // Atribui as roles completas
       password: '', // ✅ Importante: Limpar a senha ao editar para não enviar vazia acidentalmente
     };
@@ -228,9 +230,15 @@ export class UsuarioComponent {
       return;
     }
 
+    if (!usuario.nome?.trim()) {
+      this.toastService.showError('Preencha todos os campos obrigatórios.');
+      return;
+    }
+
     const isNovoRegistro = !usuario.id || usuario.id <= 0;
     const usuarioDTO: Partial<Usuario> = {
       username: usuario.username,
+      nome: usuario.nome,
       password: usuario.password,
       roles: usuario.roles,
     };
@@ -244,7 +252,7 @@ export class UsuarioComponent {
         return;
       }
       this.usuarioService.cadastrar(usuarioDTO).subscribe({
-        next: (msg) => {
+        next: (resposta) => {
           // ✅ Debug para retorno do backend
           console.log('Retorno do backend:', usuarioDTO);
           // ✅ Log de debug para o objeto enviado no cadastro
@@ -255,7 +263,8 @@ export class UsuarioComponent {
             isNovoRegistro
           );
 
-          this.toastService.showSuccess(msg || 'Usuário cadastrado com sucesso!');
+          const mensagem = resposta?.message || 'Usuário cadastrado com sucesso!';
+          this.toastService.showSuccess(mensagem);;
           this.listar();
           this.modalRef.close();
         },
@@ -269,6 +278,7 @@ export class UsuarioComponent {
       // ✅ Para atualização: Começamos com um objeto parcial que NÃO tem a senha por padrão
       const isAtualizarRegistro: Partial<Usuario> = {
         username: usuario.username,
+        nome: usuario.nome,
         roles: this.rolesDisponiveis as Role[], // Envia roles como objetos Role
       };
 

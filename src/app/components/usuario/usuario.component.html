@@ -44,9 +44,21 @@
               ></i>
             </th>
             <th (click)="ordenarPor('username')" style="cursor: pointer">
-              Nome de Usuário
+              Login
               <i
                 *ngIf="colunaOrdenada === 'username'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+
+            <th (click)="ordenarPor('nome')" style="cursor: pointer">
+              Nome de Usuário
+              <i
+                *ngIf="colunaOrdenada === 'nome'"
                 class="bi"
                 [ngClass]="{
                   'bi-caret-up-fill': ordem === 'asc',
@@ -63,6 +75,7 @@
           <tr>
             <td>{{ usuario.id }}</td>
             <td>{{ usuario.username }}</td>
+            <td>{{ usuario.nome }}</td>
             <td>
               @for (role of usuario.roles; track role) {
               <span class="badge bg-info me-1">{{ role.nome }}</span>
@@ -182,6 +195,19 @@
       >
         O campo Nome de Usuário é obrigatório.
       </div>
+
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 120px">Nome de Usuário:</label>
+        <input
+          mdbInput
+          [(ngModel)]="registroSelecionado.nome"
+          #username="ngModel"
+          name="nome"
+          required
+          class="form-control flex-grow-1"
+        />
+      </div>     
+    
 
       <div class="d-flex align-items-center mb-3">
         <label class="me-2 fw-bold" style="width: 120px">Senha:</label>
