@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS tb_roles (
 -- Criação da tabela de usuários
 -- Adicionado 'data_criacao', 'data_atualizacao' e 'nome_completo'
 CREATE TABLE IF NOT EXISTS tb_usuarios (
-                                           id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                                           username VARCHAR(255) NOT NULL UNIQUE,
+   id BIGINT AUTO_INCREMENT PRIMARY KEY,
+   username VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     senha_provisoria BOOLEAN NOT NULL DEFAULT FALSE,
     nome_completo VARCHAR(150) NOT NULL,

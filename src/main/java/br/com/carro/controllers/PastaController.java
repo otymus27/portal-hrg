@@ -213,7 +213,7 @@ public class PastaController {
             ErrorMessage error = new ErrorMessage(
                     HttpStatus.FORBIDDEN.value(),
                     "Acesso negado",
-                    "Você não tem permissão para excluir esta pasta.",
+                    "Você não tem permissão para excluir pasta raiz.",
                     request.getRequestURI()
             );
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);

@@ -1,5 +1,6 @@
 package br.com.carro.controllers;
 
+import br.com.carro.entities.DTO.AlterarSenhaRequestDTO;
 import br.com.carro.entities.Senha.RecuperaSenhaRequestDto;
 import br.com.carro.entities.Senha.ResetSenhaRequestDto;
 import br.com.carro.exceptions.ErrorMessage;
@@ -11,10 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
 
 
 // Endpoint para recuperar senha do usuário
@@ -82,6 +82,32 @@ public class RecuperarSenhaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
+
+//    Endpoint 3 - usuario refine sua propria senha.
+    @PutMapping("/alterar-senha")
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE','BASIC')")
+    public ResponseEntity<Object> alterarSenha(@RequestBody AlterarSenhaRequestDTO dto,
+                                               @AuthenticationPrincipal Jwt jwt,
+                                               HttpServletRequest request) {
+        String username = jwt.getClaim("sub"); // pega usuário logado pelo token
+        logger.info("Usuário {} solicitou alteração de senha", username);
+
+        try {
+            recuperarSenhaService.atualizarSenha(username, dto.senhaAtual(), dto.novaSenha());
+            return ResponseEntity.ok(new Mensagem("Senha alterada com sucesso."));
+        } catch (IllegalArgumentException e) {
+            logger.error("Erro ao alterar senha: {}", e.getMessage());
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Erro de validação",
+                    e.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
 
 
 }
