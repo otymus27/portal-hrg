@@ -1,0 +1,76 @@
+<div class="explorer-container">
+  <header class="explorer-header">
+   <h2 class="explorer-title">Explorador de Protocolos</h2>
+ </header>
+
+  <div class="action-menu">
+   <button class="menu-button" (click)="voltar()" [disabled]="!pastaAtual">
+     <i class="fas fa-arrow-up"></i> Voltar
+   </button>
+   <button
+     class="menu-button"
+     (click)="navegarPara(-1)"
+     [disabled]="!pastaAtual"
+   >
+     <i class="fas fa-folder"></i> Raiz
+   </button>
+   <button class="menu-button" (click)="navegarParaHome()">
+     <i class="fas fa-home"></i> Home
+   </button>
+ </div>
+
+
+ <!-- Lista de Pastas Raiz -->
+ <div *ngIf="!loading && pastas.length > 0 && !pastaAtual" class="card-container">
+   <div class="card folder-card" *ngFor="let pasta of pastas" (click)="abrirPasta(pasta)">
+     <div class="icon">📁</div>
+     <div class="name" [title]="pasta.nome">{{ pasta.nome }}</div>
+   </div>
+ </div>
+
+ <!-- Subpastas -->
+ <div *ngIf="!loading && pastaAtual" class="card-container">
+   <div class="card folder-card" *ngFor="let sub of pastaAtual.subPastas" (click)="abrirSubPasta(sub)">
+     <div class="icon">📁</div>
+     <div class="name" [title]="sub.nome">{{ sub.nome }}</div>
+   </div>
+
+    <!-- Arquivos -->
+   <div class="card file-card" *ngFor="let arquivo of arquivos" (click)="abrirArquivo(arquivo)">
+     <div class="icon">
+       <img [src]="getIcon(arquivo)" alt="icone" class="file-icon">
+     </div>
+     <div class="name" [title]="arquivo.nome">{{ arquivo.nome }}</div>
+     <div class="size">{{ publicService.formatarTamanho(arquivo.tamanho) }}</div>
+   </div>
+
+   <!-- Mensagem caso não haja subpastas ou arquivos -->
+   <p *ngIf="pastaAtual.subPastas.length === 0 && arquivos.length === 0">
+     Nenhuma subpasta ou arquivo encontrado nesta pasta.
+   </p>
+ </div>
+
+ <!-- Estado vazio -->
+ <p *ngIf="!loading && pastas.length === 0 && !pastaAtual">Nenhuma pasta pública encontrada.</p>
+ 
+ <!-- Modal de Arquivo -->
+ <div class="modal-overlay" *ngIf="arquivoSelecionado">
+   <div class="modal-content">
+     <h3 class="modal-title">Abrir ou Baixar?</h3>
+     <h3>{{ arquivoSelecionado.nome }}</h3>        
+     <div class="modal-actions">
+         <button class="modal-button open" (click)="visualizarArquivo(arquivoSelecionado)">
+           <i class="fas fa-eye"></i> Abrir
+         </button>
+
+         <button class="modal-button download" (click)="baixarArquivo(arquivoSelecionado)">
+           <i class="fas fa-download"></i> Fazer Download
+         </button>
+         <p>Tamanho: {{ publicService.formatarTamanho(arquivoSelecionado.tamanho) }}</p>
+     </div>
+    
+     <button class="modal-button cancel" (click)="fecharModal()">Cancelar</button>
+   </div>
+ </div>
+
+</div>

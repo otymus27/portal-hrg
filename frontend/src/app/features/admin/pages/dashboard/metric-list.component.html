@@ -1,0 +1,24 @@
+<div class="chart-card">
+  <div class="header">
+    <h3>{{ title }}</h3>
+    <div class="sort-buttons">
+      <button (click)="sortByValue()" title="Ordenar por valor">🔽 Valor</button>
+      <button (click)="sortByLabel()" title="Ordenar por label">🔤 Label</button>
+    </div>
+  </div>
+
+  <ul class="metric-list">
+    <li *ngFor="let item of data">
+      <span class="label">{{ item.label }}</span>
+      <div class="bar-container" title="{{ item.value }} {{ unit }}">
+        <div
+          class="bar"
+          [style.width.%]="getBarWidth(item.value)"
+          [style.background-color]="getBarColor(item.value)"
+        ></div>
+      </div>
+      <span class="value">{{ item.value }} {{ unit }}</span>
+    </li>
+    <li *ngIf="data.length === 0" class="empty">Nenhum dado disponível</li>
+  </ul>
+</div>

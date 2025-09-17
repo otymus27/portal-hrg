@@ -1,0 +1,13 @@
+<div *ngIf="pasta" class="pasta-item">
+  <button (click)="abrirPasta()">
+    📁 {{ pasta.nome }}
+  </button>
+
+  <!-- Lista de arquivos da pasta -->
+  <ul *ngIf="pasta.arquivos && pasta.arquivos.length > 0">
+    <li *ngFor="let arquivo of pasta.arquivos">
+      📄 {{ arquivo.nome }} ({{ arquivo.tamanho | number }} KB)
+      <button (click)="baixarArquivo(arquivo)">⬇️</button>
+    </li>
+  </ul>
+</div>

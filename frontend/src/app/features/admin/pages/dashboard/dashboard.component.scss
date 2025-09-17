@@ -1,0 +1,98 @@
+/* ------------------------------
+   🎨 Estilos do Dashboard
+--------------------------------*/
+
+/* Container principal */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2rem;
+  background: #f8f9fb;
+  min-height: 100vh;
+
+  /* animação suave de entrada */
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+/* ------------------------------
+   🔹 Cards de Métricas
+--------------------------------*/
+.card-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.75rem;
+  }
+
+  .metric {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0d6efd; /* azul destaque */
+  }
+}
+
+/* ------------------------------
+   📊 Gráficos
+--------------------------------*/
+.chart-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+
+  background: #fff;
+  border-radius: 14px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Ajustes para gráficos Apex */
+apx-chart {
+  width: 100% !important;
+  max-height: 400px;
+}
+
+/* ------------------------------
+   ⏳ Loading Spinner
+--------------------------------*/
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #6c757d;
+  font-weight: 500;
+  height: 60vh;
+}
+
+/* ------------------------------
+   ✨ Animações
+--------------------------------*/
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

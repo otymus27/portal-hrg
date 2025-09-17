@@ -1,0 +1,355 @@
+<div class="container">
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded">
+        <h1>Gerenciamento de Usuários</h1>
+        <button class="btn btn-primary btn-rounded btn-shadow me-2" (click)="cadastrarModal()">
+          <i class="bi bi-plus-circle me-1"></i> Novo Usuário
+        </button>
+      </div>
+
+      <!-- Barra de pesquisa e filtros -->
+      <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+        <div class="d-flex flex-grow-1 me-2 gap-2">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Filtrar por nome de usuário"
+            [(ngModel)]="filtroUsername"
+            (keyup.enter)="aplicarFiltros()"
+          />
+        </div>
+
+        <button class="btn btn-primary ms-2" (click)="aplicarFiltros()">
+          <i class="bi bi-search"></i> Pesquisar
+        </button>
+        <button class="btn btn-secondary ms-2" (click)="limparFiltros()">
+          Limpar
+        </button>
+      </div>
+
+      <!-- Tabela de Usuários -->
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th (click)="ordenarPor('id')" style="cursor: pointer">
+              ID
+              <i
+                *ngIf="colunaOrdenada === 'id'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+            <th (click)="ordenarPor('username')" style="cursor: pointer">
+              Login
+              <i
+                *ngIf="colunaOrdenada === 'username'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+
+            <th (click)="ordenarPor('nome')" style="cursor: pointer">
+              Nome de Usuário
+              <i
+                *ngIf="colunaOrdenada === 'nome'"
+                class="bi"
+                [ngClass]="{
+                  'bi-caret-up-fill': ordem === 'asc',
+                  'bi-caret-down-fill': ordem === 'desc'
+                }"
+              ></i>
+            </th>
+            <th>Roles</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (usuario of lista; track usuario.id) {
+          <tr>
+            <td>{{ usuario.id }}</td>
+            <td>{{ usuario.username }}</td>
+            <td>{{ usuario.nome }}</td>
+            <td>
+              @for (role of usuario.roles; track role) {
+              <span class="badge bg-info me-1">{{ role.nome }}</span>
+              }
+            </td>
+
+          
+            <td>
+              <button
+                class="btn btn-warning btn-sm btn-shadow me-1"
+                (click)="editarModal(usuario)"
+                title="Editar Usuário"
+              >
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button
+                class="btn btn-danger btn-sm btn-shadow me-1"
+                (click)="excluir(usuario)"
+                title="Excluir Usuário"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+
+              <button 
+                class="btn btn-warning btn-sm btn-shadow mr-2"
+                (click)="resetarSenha(usuario.id)"
+                title="Resetar Senha">
+                <i class="fas fa-key"></i>
+                <span class="visually-hidden">Resetar Senha</span>
+              </button>
+              
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="4" class="text-center">Nenhum usuário encontrado.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      
+      <!-- Paginação estilizada com contador na mesma linha -->
+      <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap bg-light text-black p-3 rounded">
+        <div class="me-3">
+          <small>
+            Exibindo página <strong>{{ page + 1 }}</strong> de
+            <strong>{{ totalPages }}</strong> — Total de registros:
+            <strong>{{ totalElements }}</strong>
+          </small>
+        </div>
+      
+        <!-- Aqui temos a paginação -->
+        <nav>
+          <ul class="pagination mb-0">
+            <li class="page-item" [class.disabled]="page === 0">
+              <button
+                class="page-link"
+                (click)="paginaAnterior()"
+                [disabled]="page === 0"
+              >
+                ‹ Anterior
+              </button>
+            </li>
+      
+            <li
+              *ngFor="let p of [].constructor(totalPages); let i = index"
+              class="page-item"
+              [class.active]="i === page"
+            >
+              <button class="page-link" (click)="irParaPagina(i)">
+                {{ i + 1 }}
+              </button>
+            </li>
+      
+            <li class="page-item" [class.disabled]="page + 1 >= totalPages">
+              <button
+                class="page-link"
+                (click)="proximaPagina()"
+                [disabled]="page + 1 >= totalPages"
+              >
+                Próxima ›
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Aqui temos os modais de cadastro e edição -->
+<ng-template #modalUserDetalhe>
+  <div class="modal-header bg-primary">
+    <h5 class="modal-title fw-bold">
+      {{ registroSelecionado.id > 0 ? "Editar Usuário" : "Novo Usuário" }}
+    </h5>
+    <button type="button" class="btn-close" (click)="cancelarModal()"></button>
+  </div>
+
+  <div class="modal-body d-flex justify-content-center">
+    <form #userForm="ngForm" (ngSubmit)="salvarUsuario(registroSelecionado)">
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 120px">Nome de Usuário:</label>
+        <input
+          mdbInput
+          [(ngModel)]="registroSelecionado.username"
+          #username="ngModel"
+          name="username"
+          required
+          class="form-control flex-grow-1"
+        />
+      </div>
+      <div
+        *ngIf="username.invalid && (username.dirty || username.touched)"
+        class="text-danger text-center"
+      >
+        O campo Nome de Usuário é obrigatório.
+      </div>
+
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 120px">Nome de Usuário:</label>
+        <input
+          mdbInput
+          [(ngModel)]="registroSelecionado.nome"
+          #username="ngModel"
+          name="nome"
+          required
+          class="form-control flex-grow-1"
+        />
+      </div>     
+    
+
+      <div class="d-flex align-items-center mb-3">
+        <label class="me-2 fw-bold" style="width: 120px">Senha:</label>
+        <input
+          mdbInput
+          type="password"
+          [(ngModel)]="registroSelecionado.password"
+          #password="ngModel"
+          name="password"
+          [required]="!registroSelecionado.id || registroSelecionado.id <= 0"
+          [disabled]="registroSelecionado.id > 0" 
+          class="form-control flex-grow-1"
+        />
+      </div>
+      <div
+        *ngIf="password.invalid && (password.dirty || password.touched)"
+        class="text-danger text-center"
+      >
+        A senha é obrigatória para novos usuários.
+      </div>
+
+      <!-- Seção de Roles -->
+      <div class="mt-3">
+        <label><strong>Roles(s):</strong></label>
+        <ul class="list-group mb-2">
+          @for (p of registroSelecionado.roles; track p.id) {
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            {{ p.nome }} 
+            <button
+              type="button"
+              class="btn btn-sm btn-danger"
+              (click)="removerRole(p)"
+            >
+              ❌
+            </button>
+          </li>
+          }
+        </ul>
+        <button
+          type="button"
+          class="btn btn-outline-success btn-sm"
+          (click)="abrirModalRoles()"
+        >
+          ➕ Adicionar Proprietário
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <div class="modal-footer d-flex justify-content-center bg-dark">
+    <div class="d-flex justify-content-end mt-3 gap-2">
+      <button
+        class="btn btn-primary me-2"
+        [disabled]="userForm.invalid || !registroSelecionado.roles || registroSelecionado.roles.length === 0"
+        (click)="salvarUsuario(registroSelecionado)"
+      >
+        Salvar
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cancelarModal()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Modal de Confirmação de Exclusão -->
+<ng-template #modalConfirmacaoExclusao>
+  <div class="modal-header bg-danger text-white">
+    <h5 class="modal-title fw-bold">Confirmação de Exclusão</h5>
+    <button type="button" class="btn-close" (click)="cancelarModal()"></button>
+  </div>
+
+  <div class="modal-body">
+    <p>
+      Tem certeza que deseja excluir o usuário
+      <strong>{{ registroSelecionado?.username }}</strong>?
+    </p>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="cancelarModal()">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn-danger" (click)="excluirConfirmado()">
+      Excluir
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #modalRoles>
+  <div class="modal-header">
+    <h5 class="modal-title">Selecionar Roles</h5>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="fecharModalRoles()"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <ul class="list-group">
+      @for (p of rolesDisponiveis; track p.id) {
+      <li
+        class="list-group-item d-flex justify-content-between align-items-center"
+      >
+        {{ p.nome }} 
+        <button
+          type="button"
+          class="btn btn-sm btn-success"
+          (click)="adicionarRole(p)"
+        >
+          ➕
+        </button>
+      </li>
+      }
+    </ul>
+  </div>
+</ng-template>
+
+
+<!-- Componente de Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  @for (toast of toastService.messages$ | async; track toast) {
+    <div 
+      class="toast show" 
+      [ngClass]="{
+        'bg-success': toast.type === 'success',
+        'bg-danger': toast.type === 'danger',
+        'bg-info': toast.type === 'info'
+      }" 
+      role="alert" 
+      aria-live="assertive" 
+      aria-atomic="true">
+      <div class="toast-header border-0 bg-transparent text-white">
+        <strong class="me-auto text-capitalize">{{ toast.type }}</strong>
+      </div>
+      <div class="toast-body text-white">
+        {{ toast.message }}
+      </div>
+    </div>
+  }
+</div>
+

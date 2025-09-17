@@ -1,0 +1,41 @@
+<div class="card shadow-sm p-4 alterar-senha-container">
+  <h2>Alterar Senha</h2>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="mb-3">
+      <label for="senhaAtual" class="form-label">Senha Atual</label>
+      <input type="password" id="senhaAtual" formControlName="senhaAtual" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+      <label for="novaSenha" class="form-label">Nova Senha</label>
+      <input type="password" id="novaSenha" formControlName="novaSenha" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+      <label for="confirmarSenha" class="form-label">Confirmar Nova Senha</label>
+      <input type="password" id="confirmarSenha" formControlName="confirmarSenha" class="form-control" />
+    </div>
+
+    <div class="d-flex gap-2">
+      <!-- Botão Alterar -->
+      <button type="submit" class="btn btn-primary flex-fill">
+        <i class="bi bi-check-circle me-1"></i>
+        Alterar Senha
+      </button>
+
+      <!-- Botão Cancelar -->
+      <button type="button" class="btn btn-secondary flex-fill" (click)="onCancel()">
+        <i class="bi bi-x-circle me-1"></i>
+        Cancelar
+      </button>
+    </div>
+  </form>
+
+  <div *ngIf="mensagem" class="alert alert-success mt-3">
+    {{ mensagem }}
+  </div>
+  <div *ngIf="erro" class="alert alert-danger mt-3">
+    {{ erro }}
+  </div>
+</div>

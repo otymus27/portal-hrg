@@ -1,0 +1,24 @@
+.app-container {
+  display: flex;
+  min-height: calc(100vh - 60px);
+
+  &.sidebar-collapsed {
+    main {
+      margin-left: 60px; /* Ajusta a margem do conteúdo para a largura do sidebar recolhido */
+    }
+  }
+}
+
+main {
+  flex: 1;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+  padding-bottom: 200px;
+  padding-top: 100px;
+}
+
+@media (max-width: 768px) {
+  main {
+    margin-left: 0; /* Remove a margem do conteúdo principal */
+  }
+}

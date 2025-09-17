@@ -1,0 +1,18 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Ocupa a altura total da tela */
+  overflow: hidden; /* Evita que a página inteira role */
+}
+
+.fixed-content {
+  flex-shrink: 0; /* Impede que o conteúdo do dashboard encolha */
+  overflow-y: auto; /* Permite rolagem apenas do dashboard, se necessário */
+}
+
+.scrollable-content {
+  flex: 1; /* Faz esta seção ocupar todo o espaço restante */
+  overflow-y: auto; /* Habilita a rolagem interna para o explorador */
+  padding: 1.5rem; /* Adicione padding para o conteúdo do explorador */
+  margin-top: 1rem;
+}

@@ -1,0 +1,77 @@
+<div class="dashboard-container" *ngIf="!isLoading && dashboardData">
+  <!-- Cards Resumo -->
+  <div class="card-group">
+    <div class="card shadow-sm">
+      <h3>Total de Arquivos</h3>
+      <p class="metric">{{ dashboardData.totalArquivos }}</p>
+    </div>
+    <div class="card shadow-sm">
+      <h3>Total de Pastas</h3>
+      <p class="metric">{{ dashboardData.totalPastas }}</p>
+    </div>
+    <div class="card shadow-sm">
+      <h3>Espaço Total Utilizado</h3>
+      <p class="metric">{{ formatBytes(dashboardData.totalEspacoBytes) }}</p>
+    </div>
+
+    <!-- ✅ Novo campo: usuários ativos -->
+    <div class="card">
+      <h3>Usuários Ativos Agora</h3>
+      <p class="metric">{{ dashboardData.usuariosAtivosAgora }}</p>
+    </div>
+
+    <!-- ✅ Novo campo: usuários logaram hoje -->
+    <div class="card">
+      <h3>Usuários que Logaram Hoje</h3>
+      <p class="metric">{{ dashboardData.usuariosLogaramHoje }}</p>
+    </div>
+  </div>
+
+  <!-- Gráficos Linha e Barras -->
+  <div class="chart-container">
+    <apx-chart
+      [series]="uploadsPorDiaChartOptions.series || []"
+      [chart]="uploadsPorDiaChartOptions.chart || { type: 'pie' }"
+      [xaxis]="uploadsPorDiaChartOptions.xaxis || {}"
+      [stroke]="uploadsPorDiaChartOptions.stroke || {}"
+      [dataLabels]="uploadsPorDiaChartOptions.dataLabels || {}"
+      [grid]="uploadsPorDiaChartOptions.grid || {}"
+      [title]="uploadsPorDiaChartOptions.title || { text: '' }"
+    >
+    </apx-chart>
+
+    <apx-chart
+      [series]="topUsuariosPorUploadChartOptions.series || []"
+      [chart]="topUsuariosPorUploadChartOptions.chart || { type: 'pie' }"
+      [xaxis]="topUsuariosPorUploadChartOptions.xaxis || {}"
+      [title]="topUsuariosPorUploadChartOptions.title || { text: '' }"
+    >
+    </apx-chart>
+  </div>
+
+  <!-- Gráficos Donut e Pie -->
+  <div class="chart-container">
+    <apx-chart
+      [series]="distribuicaoPorTipoChartOptions.series || []"
+      [chart]="distribuicaoPorTipoChartOptions.chart || { type: 'pie' }"
+      [labels]="distribuicaoPorTipoChartOptions.labels || []"
+      [title]="distribuicaoPorTipoChartOptions.title || { text: '' }"
+      [responsive]="distribuicaoPorTipoChartOptions.responsive || []"
+    >
+    </apx-chart>
+
+    <apx-chart
+      [series]="topTiposPorEspacoChartOptions.series || []"
+      [chart]="topTiposPorEspacoChartOptions.chart || { type: 'pie' }"
+      [labels]="topTiposPorEspacoChartOptions.labels || []"
+      [title]="topTiposPorEspacoChartOptions.title || { text: '' }"
+      [responsive]="topTiposPorEspacoChartOptions.responsive || []"
+    >
+    </apx-chart>
+  </div>
+</div>
+
+<div *ngIf="isLoading" class="loading-spinner">
+  <div class="spinner-border text-primary" role="status"></div>
+  <p>Carregando dados do dashboard...</p>
+</div>

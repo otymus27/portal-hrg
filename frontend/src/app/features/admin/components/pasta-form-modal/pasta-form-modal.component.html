@@ -1,0 +1,9 @@
+<div class="backdrop" (click)="close()"></div>
+<div class="modal">
+  <h3>{{ pastaId ? 'Editar' : 'Nova' }} Pasta</h3>
+  <input [(ngModel)]="nome" placeholder="Nome da pasta" />
+  <div class="buttons">
+    <button (click)="salvar()">Salvar</button>
+    <button (click)="close()">Cancelar</button>
+  </div>
+</div>

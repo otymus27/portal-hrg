@@ -1,0 +1,10 @@
+<app-header (toggleSidebarEvent)="sidebar.toggle()"></app-header>
+
+<div class="app-container">
+  <app-sidebar #sidebar [class.active]="sidebar.isCollapsed"></app-sidebar>
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+</div>
+
+<app-footer></app-footer>
