@@ -196,15 +196,20 @@ public class UsuarioService {
     }
 
 
-    // Listar todas as marcas com paginação
+    // Listar todas os registros com paginação
     public Page<Usuario> listar(Pageable pageable) {
         return usuarioRepository.findAll(pageable);
     }
 
     // Listar registros filtrando por modelo (com paginação)
-    public Page<Usuario> buscarPorNome(String username, Pageable pageable) {
-        return usuarioRepository.findByUsernameContainingIgnoreCase(username,pageable);
+    public Page<Usuario> buscarPorNome(String nome, Pageable pageable) {
+        return usuarioRepository.findByNomeContainingIgnoreCase(nome,pageable);
     }
+
+    // Listar usuarios por login com paginação
+    public Page<Usuario> buscarPorUsername(String username, Pageable pageable) {
+    return usuarioRepository.findByUsernameContainingIgnoreCase(username, pageable);
+}
 
 
 

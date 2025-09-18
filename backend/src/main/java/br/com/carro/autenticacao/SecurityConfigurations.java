@@ -91,8 +91,10 @@ public class SecurityConfigurations {
                 "http://localhost:4200",
                 "http://localhost:8082",
                 "http://localhost",
+                "http://localhost:85",
                 "http://localhost:86",
                 "http://10.85.190.202:86",
+                "http://10.85.190.202:85",
                 "null" // file:// acesso local
         ));
 

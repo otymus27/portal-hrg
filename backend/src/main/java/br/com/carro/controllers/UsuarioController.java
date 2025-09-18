@@ -50,30 +50,39 @@ public class UsuarioController {
     }
 
     // Listar registros com paginação, filtros e ordenação
-    // ✅ Apenas usuários com a role 'ADMIN' podem acessar este método para gerenciar usuários.
+    // ✅ Apenas usuários com a role 'ADMIN' ou 'GERENTE' podem acessar este método
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     @GetMapping
     public ResponseEntity<Page<Usuario>> listar(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(required = false) String username,
-             @RequestParam(defaultValue = "id") String sortField,
+            @RequestParam(required = false) String nome,
+            @RequestParam(defaultValue = "id") String sortField,
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
-        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Sort sortObj = Sort.by(direction, sortField);
-        Pageable pageable = PageRequest.of(page, size, sortObj);
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
         Page<Usuario> lista;
 
-        if (username != null && !username.isBlank()) {
-            lista = usuarioService.buscarPorNome(username, pageable);
+        if (nome != null && !nome.isBlank()) {
+            // 🔎 Filtro por nome
+            lista = usuarioService.buscarPorNome(nome, pageable);
+        } else if (username != null && !username.isBlank()) {
+            // 🔎 Filtro por username
+            lista = usuarioService.buscarPorUsername(username, pageable);
         } else {
+            // 🔎 Sem filtro → listar todos
             lista = usuarioService.listar(pageable);
         }
 
         return ResponseEntity.ok(lista);
     }
+
 
     @PostMapping()
     @Transactional

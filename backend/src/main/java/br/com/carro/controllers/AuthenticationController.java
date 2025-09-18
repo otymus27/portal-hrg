@@ -11,12 +11,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 // ✅ Adicione @CrossOrigin à classe ou ao método
 // Isso sobrescreve a configuração global para este controlador, ou age como um fallback.
-@CrossOrigin(origins = "http://localhost:4200", allowedHeaders = "*", allowCredentials = "true")
+@CrossOrigin(origins = "*")
+@RequestMapping("/api")
 public class AuthenticationController {
 
     private final AuthenticationManager authenticationManager;
